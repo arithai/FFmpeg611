@@ -1,0 +1,43 @@
+# use pkg-config for getting CFLAGS and LDLIBS
+CC = x86_64-w64-mingw32-gcc
+FFMPEG_LIBS=    libavdevice                        \
+                libavformat                        \
+                libavfilter                        \
+                libavcodec                         \
+                libswresample                      \
+                libswscale                         \
+                libavutil                          \
+
+CFLAGS += -I/usr/include/SDL2/ -I../stb -Wall -g toolbox2.c act.c
+CFLAGS := $(shell pkg-config --cflags $(FFMPEG_LIBS)) $(CFLAGS)
+LIBS = -lSDL2 -lSDL2_image -lm -lmingw32 -lSDL2main -mwindows
+LDLIBS := $(shell pkg-config --libs $(FFMPEG_LIBS)) $(LIBS)
+
+OBJS=$(addsuffix .o,$(EXAMPLES), toolbox2.o, act.o)
+
+# the following examples make explicit use of the math library
+dfvmux2:           LDLIBS += -lm
+
+.phony: all clean-test clean
+
+all: $(OBJS) $(EXAMPLES) 
+
+all: $(OBJS) $(EXAMPLES)
+
+clean-test:
+	$(RM) test*.pgm test.h264 test.mp2 test.sw test.mpg
+
+clean: clean-test
+	$(RM) $(EXAMPLES) $(OBJS)
+    
+dfvmux3: dfvmux3.c dfvmux3diff.c toolbox2.c act.c udps.c udpc.php
+	$(CC) dfvmux3.cpp  -o dfvmux3 -I/usr/local/include $(CFLAGS) $(LDLIBS) 
+	$(CC) dfvmux3diff.cpp  -o dfvmux3diff -I/usr/local/include $(CFLAGS) $(LDLIBS) 
+	$(CC) udps.cpp  -o udps 
+	cp ./udpc.php /media/sf_u14/github/arith
+
+dfvmux3diff: dfvmux3diff.c toolbox2.c act.c udps.c udpc.php
+	$(CC) dfvmux3diff.c  -o dfvmux3diff -I/usr/local/include $(CFLAGS) $(LDLIBS) 
+
+muxrgb3: muxrgb3.c toolbox2.c act.c udps.c udpc.php
+	$(CC) muxrgb3.c  -o muxrgb3 -I/usr/local/include $(CFLAGS) $(LDLIBS) 
