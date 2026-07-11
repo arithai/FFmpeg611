@@ -1,3 +1,4 @@
+#2026.07.11 arithmetic categorical theory act with SDL UI
 # use pkg-config for getting CFLAGS and LDLIBS
 CC = x86_64-w64-mingw32-g++
 FFMPEG_LIBS=    libavdevice                        \
@@ -8,7 +9,7 @@ FFMPEG_LIBS=    libavdevice                        \
                 libswscale                         \
                 libavutil                          \
 
-CFLAGS += -I/usr/include/SDL2/ -I../stb -Wall -g toolbox2.cpp act.cpp
+CFLAGS += -I/usr/include/SDL2/ -I../stb -Wall -g toolbox2.cpp act.cpp SDLmain.cpp
 CFLAGS := $(shell pkg-config --cflags $(FFMPEG_LIBS)) $(CFLAGS)
 LIBS = -lSDL2_ttf -lSDL2_image -lm -lmingw32 -lSDL2main -lSDL2 -mwindows
 LDLIBS := -L/usr/local/lib/ -L/usr/x86_64-w64-mingw32/sys-root/mingw/lib/  $(shell pkg-config --libs $(FFMPEG_LIBS)) $(LIBS)
@@ -39,7 +40,7 @@ dfvmux3: dfvmux3.c dfvmux3diff.c toolbox2.c act.c udps.c udpc.php
 dfvmux3diff: dfvmux3diff.c toolbox2.c act.c udps.c udpc.php
 	$(CC) dfvmux3diff.c  -o dfvmux3diff -I/usr/local/include $(CFLAGS) $(LDLIBS) 
 
-dfv2: dfvmux3diff.cpp toolbox2.cpp act.cpp udps.cpp udpc.php
+dfv2: dfvmux3diff.cpp toolbox2.cpp act.cpp udps.cpp udpc.php SDLmain.cpp
 	$(CC) dfvmux3diff.cpp  -o dfvmux3diff -I/usr/local/include $(CFLAGS) $(LDLIBS) 
 
 muxrgb3: muxrgb3.c toolbox2.c act.c udps.c udpc.php
