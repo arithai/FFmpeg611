@@ -3,7 +3,7 @@ FFmpeg examples README
 20260711
 make -f Makefile.act dfv2
 ./dfvmux3diff VID20250724102442.mp4 VID20250724102442_r2.mp4
-
+Simple DirectMedia Layer
 
 Both following use cases rely on pkg-config and make, thus make sure
 that you have them installed and working on your system.
