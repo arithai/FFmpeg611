@@ -1114,7 +1114,7 @@ int main(int argc, char **argv)
 //mux begin
 
   sdl_main(argc, argv);
-
+  printf("exit from sdl_exit.\n");
 //mux end
     /* read all packets */
     while (1) {

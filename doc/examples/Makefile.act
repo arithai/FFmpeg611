@@ -11,7 +11,8 @@ FFMPEG_LIBS=    libavdevice                        \
 
 CFLAGS += -I/usr/include/SDL2/ -I../stb -Wall -g toolbox2.cpp act.cpp SDLmain.cpp
 CFLAGS := $(shell pkg-config --cflags $(FFMPEG_LIBS)) $(CFLAGS)
-LIBS = -lSDL2_ttf -lSDL2_image -lm -lmingw32 -lSDL2main -lSDL2 -mwindows
+#LIBS = -lSDL2_ttf -lSDL2_image -lm -lmingw32 -lSDL2main -lSDL2 -mwindows
+LIBS = -lSDL2_ttf -lSDL2_image -lm -lmingw32 -lSDL2main -lSDL2 -mconsole
 LDLIBS := -L/usr/local/lib/ -L/usr/x86_64-w64-mingw32/sys-root/mingw/lib/  $(shell pkg-config --libs $(FFMPEG_LIBS)) $(LIBS)
 
 OBJS=$(addsuffix .o,$(EXAMPLES), toolbox2.o, act.o)
