@@ -1,4 +1,11 @@
 
+20260713
+????? ?????????
+An "Illegal instruction" error (SIGILL) in Cygwin means 
+your CPU tried to execute a machine code instruction it does not recognize or support. 
+This typically happens due to mismatched hardware optimization flags or 
+corrupted application memory
+
 20260712
 ./configure --cross-prefix=x86_64-w64-mingw32- --target-os=mingw32 --arch=x86_64 --cpu=generic --disable-avx --disable-fma3 --disable-fma4
 CFLAGS="-Wno-error=incompatible-pointer-types" ./configure --extra-cflags="-Wno-error=implicit-function-declaration" --extra-cxxflags="-Wno-error=implicit-function-declaration" --cross-prefix=x86_64-w64-mingw32- --target-os=mingw32 --arch=x86_64 --cpu=generic --disable-avx --disable-fma3 --disable-fma4  --extra-cflags="-D_WIN32" --prefix=/usr/local --enable-shared --enable-gpl --disable-indev=gdigrab --disable-cuda-llvm --disable-dxva2
