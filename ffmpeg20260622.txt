@@ -1,0 +1,181 @@
+
+20260712
+./configure --cross-prefix=x86_64-w64-mingw32- --target-os=mingw32 --arch=x86_64 --cpu=generic --disable-avx --disable-fma3 --disable-fma4
+CFLAGS="-Wno-error=incompatible-pointer-types" ./configure --extra-cflags="-Wno-error=implicit-function-declaration" --extra-cxxflags="-Wno-error=implicit-function-declaration" --cross-prefix=x86_64-w64-mingw32- --target-os=mingw32 --arch=x86_64 --cpu=generic --disable-avx --disable-fma3 --disable-fma4  --extra-cflags="-D_WIN32" --prefix=/usr/local --enable-shared --enable-gpl --disable-indev=gdigrab --disable-cuda-llvm --disable-dxva2
+
+Lynx Version 2.9.1 (15 Apr 2024)
+libwww-FM 2.14, SSL-MM 1.4.1, OpenSSL 3.5.7, ncurses 6.5.20240427(wide)
+Built on cygwin (Jul 12 2026 09:05:19).
+
+make && sudo make install-full
+CFLAGS="-Wno-error=incompatible-pointer-types"  ./configure \
+  --prefix=/usr \
+  --sysconfdir=/etc/lynx \
+  --with-zlib \
+  --with-bzlib \
+  --with-ssl \
+  --with-screen=ncursesw \
+  --enable-ipv6 \
+  --enable-locale-charset \
+  --enable-nls
+lynx
+./configure --host=x86_64-w64-mingw32 --with-screen=pdcurses
+./configure --host=x86_64-w64-mingw32 --with-screen=pdcurses --enable-colors --enable-linked-styles
+CFLAGS="-Wno-error=incompatible-pointer-types"  ./configure --with-gnutls --with-gnutls-openssl
+CFLAGS="-Wno-error=incompatible-pointer-types" ./configure --cross-prefix=x86_64-w64-mingw32- --target-os=mingw32 --arch=x86_64 --prefix=/usr/local --with-openssl
+
+20260711
+C:\cygwin64\etc\profile
+	PATH="/usr/local/bin:/usr/bin:/usr/x86_64-w64-mingw32/sys-root/mingw/bin${PATH:+:${PATH}}"
+utput #0, mp4, to 'VID20250724102442_r2.mp4':
+  Stream #0:0: Video: mpeg4, yuv420p, 3840x2160, q=2-31, 400 kb/s, 25 tbn
+      Side data:
+        cpb: bitrate max/min/avg: 0/0/400000 buffer size: 0 vbv_delay: N/A
+[in @ 0000021ee49a4800] filter context - w: 3840 h: 2160 fmt: 12 csp: unknown range: unknown, incoming frame - w: 3840 h: 2160 fmt: 12 csp: bt470bg range: pc pts_time: 0
+[in @ 0000021ee49a4800] Changing video frame properties on the fly is not supported by all filters.
+[swscaler @ 0000021ee6d5b040] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 0000021ee7400040] deprecated pixel format used, make sure you did set range correctly
+[swscaler @ 0000021ee6ce5140] deprecated pixel format used, make sure you did set range correctly
+
+
+CFLAGS += -I/usr/include/SDL2/ -I../stb -Wall -g toolbox2.c act.c
+CFLAGS := $(shell pkg-config --cflags $(FFMPEG_LIBS)) $(CFLAGS)
+LIBS = -lSDL2_image -lm -lmingw32 -lSDL2main -lSDL2 -mwindows
+LDLIBS := -L/usr/local/lib/ -L/usr/x86_64-w64-mingw32/sys-root/mingw/lib/  $(shell pkg-config --libs $(FFMPEG_LIBS)) $(LIBS)
+
+
+/usr/local/bin:/usr/bin:/cygdrive/c/VulkanSDK/1.4.350.0/Bin:/cygdrive/c/WINDOWS/system32:/cygdrive/c/WINDOWS:/cygdrive/c/WINDOWS/System32/Wbem:/cygdrive/c/WINDOWS/System32/WindowsPowerShell/v1.0:/cygdrive/c/WINDOWS/System32/OpenSSH:/cygdrive/c/Program Files/dotnet:/cygdrive/c/Program Files/GitExtensions:/cygdrive/c/Program Files/Git/cmd:/cygdrive/c/Program Files (x86)/Windows Kits/10/Windows Performance Toolkit:/cygdrive/c/Users/user/AppData/Local/Microsoft/WindowsApps:/cygdrive/c/Users/user/.dotnet/tools:/usr/x86_64-w64-mingw32/sys-root/mingw/bin/
+
+export PATH=$PATH:/usr/x86_64-w64-mingw32/sys-root/mingw/bin/
+./configure --cross-prefix=x86_64-w64-mingw32-g++ --target-os=mingw32 --arch=x86_64 --enable-shared --extra-cflags="-Wno-error=incompatible-pointer-types"
+
+20260710
+https://github.com/livepeer/FFmpeg-6.1.1.git
+./configure --cross-prefix=x86_64-w64-mingw32- --target-os=mingw32 --arch=x86_64 HTTCP.c:1209:50: error: passing argument 3 of ‘CreateThread’ from incompatible pointer type [-Wincompatible-pointer-types]
+make 
+make install
+++++++++++++++++++++++++
+++++++++++++++++++++++++
+++++++++++++++++++++++++
+++++++++++++++++++++++++
+++++++++++++++++++++++++
+++++++++++++++++++++++++
+++++++++++++++++++++++++
+++++++++++++++++++++++++
+++++++++++++++++++++++++
+++++++++++++++++++++++++
+++++++++++++++++++++++++
+++++++++++++++++++++++++
+++-+++++++---+++++++++++
+----+-------------+--+++
+----------------------++
+.......--------------+++
+.............--------+++
+.............------.-+++
+.............------.-+++
+.............------.-+++
+........-....------.-+++
+.----..----..------.-+++
+-----..----..------.-+++
+-----..----..------.-+++
+------.----..------.-+++
+.----..----..------.-+++
+.----..----..------.-+++
+.----..------------.-+++
+-------------------.-+++
+..--------.-..-----.-+++
+..---------...-----.-+++
+...--------..------.-+++
+  .--------..------.-+++
+...--------...-----.-+++
+-.---------...-----.-+++
+..-----------------.-+++
+-------------------.-+++
+-------------------.-+++
+-------------------.-+++
+-------------------.-+++
+-------------------.-+++
+-------------------.-+++
+-------------------.-+++
++++----------------.-+++
++++----------------.-+++
++++----------------.-+++
++++----------------.-+++
++++----------------.-+++
+++++---------------.-+++
+---+---------------.-+++
+.--+---------------.-+++
+.--+---------------.-+++
+.--+---++----------.-+++
+.--++--+++---------.-+++
+---+++-+++-----------+++
+-.-++++++++---------.+++
++++++++++++-------+-.+++
+--+++---+++-------+-.+++
+--+++-.--++------++-.-++
+--+++-.--++------++-.-++
+--++++.-+---------+-.-++
+--++++--+--------++-.-++
+---+++--++--------+-.-++
+---++----+--------+-.-++
+-----------------++-.-++
+----.---..-..-----+-.-++
+---------....-------.-++
+-----..--....-------.-++
+-----..--...--------.-++
+-.---.---...--------.-++
+-..-----..--.-------.-++
+--.------....---------++
+---------.-..-----+--+++
+---------.-..-----+--+++
+-.........-..------+++++
+----+-++++++++++++++++++
+++++#+##########+##++++#
+#+##################+#++
+ffmpeg version git-2024-03-08-9ff36ea388 Copyright (c) 2000-2024 the FFmpeg developers
+  built with gcc 14 (GCC)
+  configuration: --cross-prefix=x86_64-w64-mingw32- --target-os=mingw32 --arch=x86_64 --enable-shared --extra-cflags='-Wno-error=incompatible-pointer-types'
+  libavutil      58. 36.101 / 58. 36.101
+  libavcodec     60. 37.100 / 60. 37.100
+  libavformat    60. 20.100 / 60. 20.100
+  libavdevice    60.  4.100 / 60.  4.100
+  libavfilter     9. 17.100 /  9. 17.100
+  libswscale      7.  6.100 /  7.  6.100
+  libswresample   4. 13.100 /  4. 13.100
+Universal media converter
+usage: ffmpeg [options] [[infile options] -i infile]... {[outfile options] outfile}...
+
+
+https://github.com/livepeer/FFmpeg-6.1.1.git
+
+ffmpeg -i VID20260701152055.mp4 VID20260701152055/x%03d.jpg
+ffmpeg -i VID20260611082732.mp4 VID20260611082732/x%03d.jpg
+
+ffmpeg -i input.mp4 output_%03d.jpeg
+
+./dfvmux3diff VID20260611082732.mp4 VID20260611082732_r1.mp4
+
+find . -type f -print0 | xargs -0 dos2unix
+
+./configure --enable-shared --disable-static --enable-gpl --enable-version3 --disable-indev=gdigrab
+make -j$(nproc)
+make install
+
+Downgrade your FFmpeg source to an older branch (like 6.1.1)
+
+Devel: binutils, gcc-core, make, git, pkg-config, nasm, yasmUtils: diffutils, tar, gawk
+
+git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg
+git checkout n6.1.1
+
+libavutil/wchar_filename.h
+//#ifdef _WIN32 Line22
+//#ifdef _WIN32 Line22
+#if defined(_WIN32) || defined(__CYGWIN__) || defined(__MSYS__)
+#include <wchar.h>
+--disable-dshow
+./configure --extra-cflags="-Wno-error=implicit-function-declaration" 
+--extra-cxxflags="-Wno-error=implicit-function-declaration" 
+--extra-cflags="-D_WIN32" --prefix=/usr/local --enable-shared --enable-gpl --disable-indev=gdigrab --disable-cuda-llvm --disable-dxva2
+./configure --extra-cflags="-Wno-error=implicit-function-declaration" --extra-cflags="-D_WIN32" --prefix=/usr/local --enable-shared --enable-gpl
+./configure --extra-cflags="-Wno-error=implicit-function-declaration" 

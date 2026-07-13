@@ -954,11 +954,17 @@ static void display_frame(const AVFrame *frame, AVRational time_base)
 #endif
 
 int sdl_main(int argc, char *argv[]);
-
+int main(int argc, char **argv) {
+    sdl_main(argc, argv);
+}
 #define XLENGTH 3840
 int UEY[XLENGTH];
 int DEY[XLENGTH];
-int main(int argc, char **argv)
+int dfvmux3diff2_main(int argc, char **argv) {
+  printf("nothing in dfvmux3diff2_main\n");
+  return 1;
+}
+int dfvmux3diff_main(int argc, char **argv)
 {
     time_t now0,now1;
     int ret;
@@ -1112,9 +1118,8 @@ int main(int argc, char **argv)
   }
   */
 //mux begin
-
-  sdl_main(argc, argv);
-  printf("exit from sdl_exit.\n");
+//  sdl_main(argc, argv);
+//  printf("exit from sdl_exit.\n");
 //mux end
     /* read all packets */
     while (1) {
@@ -1168,6 +1173,7 @@ int main(int argc, char **argv)
                         encode_video = !write_video_frame(oc, &video_st);
                         if(encode_video==0 && !encode_audio) 
                           goto end_video;
+
                     //  encode_audio = !write_audio_frame(oc, &audio_st);
                     } else {
                         printf("else encode_audio %s(%d)\n",__FILE__,__LINE__);
@@ -1235,5 +1241,6 @@ end:
     }
     now1 = time(NULL);
     printf("diff=%lu\n",now1-now0);
-    exit(0);
+    return 1;
+//  exit(0);
 }

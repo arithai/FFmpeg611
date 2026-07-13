@@ -280,6 +280,7 @@ void Draw4K(SDL_Surface* surface,SDL_Renderer* renderer0, int yid) {
     SDL_DestroyRenderer(renderer2);
     SDL_DestroyWindow(window2);
 }
+int dfvmux3diff_main(int argc, char **argv);
 int sdl_main(int argc, char* argv[]) {
     int i;
     // Initialize SDL
@@ -421,6 +422,7 @@ int sdl_main(int argc, char* argv[]) {
     int quit = 0;
     int is_extending = 0;
     SDL_Event e;
+    int result = 0;
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT) {
@@ -656,8 +658,13 @@ int sdl_main(int argc, char* argv[]) {
         SDL_SetRenderDrawColor(renderer,255, 0, 0, 255); // Blue normal mode
         SDL_RenderFillRect(renderer, &myButton[5].rect);
         if (myButton[5].isPressed) {
-          quit = 1;
-          printf("Quit..\n");
+          quit = 0;
+          myButton[5].isPressed = false;
+          printf("call dfvmux3diff_main..\n");
+
+          result = dfvmux3diff_main(argc, argv);
+           
+          printf("Quit dfvmux3diff_main..\n");
         }
 //DrawCircle
         int n=nPt[nowpicID];
