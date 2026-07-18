@@ -1,5 +1,119 @@
 
+20260715
+
+CFLAGS="-Wno-error=incompatible-pointer-types" \
+./configure --cross-prefix=x86_64-w64-mingw32- --target-os=mingw32  --arch=x86_64 \
+--extra-cflags="-Wno-error=implicit-function-declaration" \
+--extra-cxxflags="-Wno-error=implicit-function-declaration" \
+--extra-cflags="-D_WIN32" --prefix=/usr/local \
+--enable-shared --enable-gpl --disable-indev=gdigrab --disable-cuda-llvm --disable-dxva2
+
+
+$ make -fMakefile.act dfv2
+x86_64-w64-mingw32-g++ dfvmux3diff.cpp  -o dfvmux3diff -I/usr/local/include  -I/usr/include/SDL2/ -I../stb -Wall -g toolbox2.cpp act.cpp SDLmain.cpp -L/usr/local/lib/ -L/usr/x86_64-w64-mingw32/sys-root/mingw/lib/  -lavdevice -lavfilter -lavformat -lavcodec -lswresample -lswscale -lavutil -lSDL2_ttf -lSDL2_image -lm -lmingw32 -lSDL2main -lSDL2 -mconsole
+
+./dfvmux3diff VID20250724102442.mp4 VID20250724102442_r3.mp4
+
+
+--cross-prefix=x86_64-w64-mingw32- --target-os=mingw32
+
+
+
+CFLAGS="-Wno-error=incompatible-pointer-types" ./configure --cc=gcc --cxx=g++ --enable-gpl
+CFLAGS="-Wno-error=incompatible-pointer-types" ./configure --cc=gcc --cxx=g++ --enable-gpl --arch=x86_64 --cpu=generic --disable-avx --disable-fma3 --disable-fma4  --extra-cflags="-D_WIN32" --prefix=/usr/local --enable-shared --enable-gpl --disable-indev=gdigrab --disable-cuda-llvm --disable-dxva2
+
+./lynx http://arith.scienceontheweb.net/cdjht632.php
+
+./configure --extra-cflags="-Wno-error=implicit-function-declaration" \
+--extra-cxxflags="-Wno-error=implicit-function-declaration" \
+--extra-cflags="-D_WIN32" --prefix=/usr/local \
+--enable-shared --enable-gpl --disable-indev=gdigrab --disable-cuda-llvm --disable-dxva2
+
+./configure --host=x86_64-w64-mingw32 \
+            --prefix=/usr           \
+            --sysconfdir=/etc/lynx  \
+            --with-zlib             \
+            --with-bzlib            \
+            --with-ssl              \
+            --with-screen=ncursesw  \
+            --enable-ipv6           \
+            --enable-locale-charset \
+            --enable-nls            \
+            --datadir=/usr/share/doc/lynx-2.9.3 &&
+
+./configure --prefix=/usr           \
+            --sysconfdir=/etc/lynx  \
+            --with-zlib             \
+            --with-bzlib            \
+            --with-ssl              \
+            --with-screen=ncursesw  \
+            --enable-ipv6           \
+            --enable-locale-charset \
+            --enable-nls            \
+            --datadir=/usr/share/doc/lynx-2.9.3 &&
+
+CFLAGS="-Wno-error=incompatible-pointer-types"   ./configure --host=x86_64-w64-mingw32 \
+            --prefix=/usr \
+            --sysconfdir=/etc/lynx \
+            --target=x86_64-w64-mingw32 \
+            --enable-ipv6 \
+            --with-screen=curses
+
+CFLAGS="-Wno-error=incompatible-pointer-types"  ./configure  \
+  --prefix=/usr \
+  --sysconfdir=/etc/lynx \
+  --target=x86_64-w64-mingw32 \
+  --with-zlib \
+  --with-bzlib \
+  --with-ssl \
+  --with-screen=ncursesw \
+  --enable-ipv6 \
+  --enable-locale-charset \
+  --enable-nls
+
+CFLAGS="-Wno-error=incompatible-pointer-types" ./configure --host=x86_64-w64-mingw32 CPPFLAGS="-DWIN32" --without-screen --with-screen=curses
+
+
+./configure --host=x86_64-w64-mingw32 \
+  --disable-largefile \
+  --with-screen=pdcurses \
+  --disable-nls \
+  CC=x86_64-w64-mingw32-gcc \
+  CPP=x86_64-w64-mingw32-cpp
+make
+
+./configure --host=x86_64-w64-mingw32 CC=x86_64-w64-mingw32-gcc \
+  --disable-full-screen --without-ssl --without-screen \
+  CC=x86_64-w64-mingw32-gcc \
+  CPP=x86_64-w64-mingw32-cpp
+
+CFLAGS="-Wno-error=incompatible-pointer-types"  ./configure \
+  --prefix=/usr \
+  --sysconfdir=/etc/lynx \ 
+  --with-zlib \
+  --with-bzlib \
+  --with-ssl \
+  --with-screen=ncursesw \
+  --enable-ipv6 \
+  --enable-locale-charset \
+  --enable-nls
+
+20260714 CPPFLAGS="-DWIN32"
+CFLAGS="-Wno-error=incompatible-pointer-types" ./configure --host=x86_64-w64-mingw32 CPPFLAGS="-DWIN32" --without-screen --with-screen=curses
+
+gcc -Wno-error=incompatible-pointer-types   -DHAVE_CONFIG_H  -DLOCALEDIR=\"/usr/share/locale\" -I. -I.. -Ichrtrans -I./chrtrans -I.. -I./src -I./WWW/Library/Implementation  -DIGNORE_MSGFMT_HACK -DWIN_EX -D_WINDOWS_NSL -D_GNU_SOURCE -D_DEFAULT_SOURCE -DNCURSES_WIDECHAR -D_XOPEN_SOURCE_EXTENDED  -o lynx.exe  LYebcdic.o LYClean.o LYShowInfo.o LYEdit.o LYStrings.o LYMail.o HTAlert.o GridText.o LYGetFile.o LYMain.o LYMainLoop.o LYCurses.o LYBookmark.o LYmktime.o LYUtils.o LYOptions.o LYReadCFG.o LYSearch.o LYHistory.o LYForms.o LYPrint.o LYrcFile.o LYDownload.o LYNews.o LYKeymap.o HTML.o HTFWriter.o HTInit.o DefaultStyle.o LYUpload.o LYLeaks.o LYexit.o LYJump.o LYList.o LYCgi.o LYTraversal.o LYEditmap.o LYCharSets.o LYCharUtils.o LYMap.o LYCookie.o LYStyle.o LYHash.o LYPrettySrc.o TRSTable.o parsdate.o UCdomap.o UCAux.o UCAuto.o  LYSession.o LYLocal.o  .././WWW/Library/Implementation/libwww.a -lncursesw -lssl -lcrypto  -luser32
+
+C:/u14/github/lynx291/src
+x86_64-w64-mingw32-gcc -Wno-error=incompatible-pointer-types   -DHAVE_CONFIG_H  -DLOCALEDIR=\"/usr/share/locale\" -I. -I.. -Ichrtrans -I./chrtrans -I.. -I../lynx291/src -I../lynx291/WWW/Library/Implementation  -DIGNORE_MSGFMT_HACK -DWIN_EX -D_WINDOWS_NSL -D_GNU_SOURCE -D_DEFAULT_SOURCE -DNCURSES_WIDECHAR -D_XOPEN_SOURCE_EXTENDED  -o lynx.exe  LYebcdic.o LYClean.o LYShowInfo.o LYEdit.o LYStrings.o LYMail.o HTAlert.o GridText.o LYGetFile.o LYMain.o LYMainLoop.o LYCurses.o LYBookmark.o LYmktime.o LYUtils.o LYOptions.o LYReadCFG.o LYSearch.o LYHistory.o LYForms.o LYPrint.o LYrcFile.o LYDownload.o LYNews.o LYKeymap.o HTML.o HTFWriter.o HTInit.o DefaultStyle.o LYUpload.o LYLeaks.o LYexit.o LYJump.o LYList.o LYCgi.o LYTraversal.o LYEditmap.o LYCharSets.o LYCharUtils.o LYMap.o LYCookie.o LYStyle.o LYHash.o LYPrettySrc.o TRSTable.o parsdate.o UCdomap.o UCAux.o UCAuto.o  LYSession.o LYLocal.o  ../lynx291/WWW/Library/Implementation/libwww.a -lncursesw -lssl -lcrypto  -luser32
+Copying Lynx executable into top-level directory
+
+
 20260713
+x86_64-w64-mingw32-gcc -Wno-error=incompatible-pointer-types   -DHAVE_CONFIG_H  -DLOCALEDIR=\"/usr/share/locale\" -I. -I.. -Ichrtrans -I./chrtrans -I.. -I../src -I.././WWW/Library/Implementation  -DIGNORE_MSGFMT_HACK -DWIN_EX -D_WINDOWS_NSL -D_GNU_SOURCE -D_DEFAULT_SOURCE -DNCURSES_WIDECHAR -D_XOPEN_SOURCE_EXTENDED  -o lynx.exe  LYebcdic.o LYClean.o LYShowInfo.o LYEdit.o LYStrings.o LYMail.o HTAlert.o GridText.o LYGetFile.o LYMain.o LYMainLoop.o LYCurses.o LYBookmark.o LYmktime.o LYUtils.o LYOptions.o LYReadCFG.o LYSearch.o LYHistory.o LYForms.o LYPrint.o LYrcFile.o LYDownload.o LYNews.o LYKeymap.o HTML.o HTFWriter.o HTInit.o DefaultStyle.o LYUpload.o LYLeaks.o LYexit.o LYJump.o LYList.o LYCgi.o LYTraversal.o LYEditmap.o LYCharSets.o LYCharUtils.o LYMap.o LYCookie.o LYStyle.o LYHash.o LYPrettySrc.o TRSTable.o parsdate.o UCdomap.o UCAux.o UCAuto.o  LYSession.o LYLocal.o  .././WWW/Library/Implementation/libwww.a -lncursesw -lssl -lcrypto  -luser32
+gcc -Wno-error=incompatible-pointer-types   -DHAVE_CONFIG_H  -DLOCALEDIR=\"/usr/share/locale\" -I. -I.. -Ichrtrans -I./chrtrans -I.. -I../src -I.././WWW/Library/Implementation  -DIGNORE_MSGFMT_HACK -DWIN_EX -D_WINDOWS_NSL -D_GNU_SOURCE -D_DEFAULT_SOURCE -DNCURSES_WIDECHAR -D_XOPEN_SOURCE_EXTENDED  -o lynx.exe  LYebcdic.o LYClean.o LYShowInfo.o LYEdit.o LYStrings.o LYMail.o HTAlert.o GridText.o LYGetFile.o LYMain.o LYMainLoop.o LYCurses.o LYBookmark.o LYmktime.o LYUtils.o LYOptions.o LYReadCFG.o LYSearch.o LYHistory.o LYForms.o LYPrint.o LYrcFile.o LYDownload.o LYNews.o LYKeymap.o HTML.o HTFWriter.o HTInit.o DefaultStyle.o LYUpload.o LYLeaks.o LYexit.o LYJump.o LYList.o LYCgi.o LYTraversal.o LYEditmap.o LYCharSets.o LYCharUtils.o LYMap.o LYCookie.o LYStyle.o LYHash.o LYPrettySrc.o TRSTable.o parsdate.o UCdomap.o UCAux.o UCAuto.o  LYSession.o LYLocal.o  .././WWW/Library/Implementation/libwww.a -lncursesw -lssl -lcrypto  -luser32
+
+./lynx https://arithai.github.io/arith/index.html
+
 ????? ?????????
 An "Illegal instruction" error (SIGILL) in Cygwin means 
 your CPU tried to execute a machine code instruction it does not recognize or support. 
@@ -15,7 +129,7 @@ libwww-FM 2.14, SSL-MM 1.4.1, OpenSSL 3.5.7, ncurses 6.5.20240427(wide)
 Built on cygwin (Jul 12 2026 09:05:19).
 
 make && sudo make install-full
-CFLAGS="-Wno-error=incompatible-pointer-types"  ./configure \
+CFLAGS="-Wno-error=incompatible-pointer-types"  ./configure --host=x86_64-w64-mingw32 \
   --prefix=/usr \
   --sysconfdir=/etc/lynx \
   --with-zlib \

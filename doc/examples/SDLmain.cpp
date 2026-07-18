@@ -206,7 +206,7 @@ SDL_Rect srcRect   = {0, 0, 972, 576};
 // Set up destination rectangle (same size for true 1:1 "real" size)
 SDL_Rect srcMRect  = {0, 0, 972, 576};
 SDL_Rect destRect  = {0, 0, 972, 576}; 
-SDL_Rect destMRect = {0, 0, 972+108, 576+64}; 
+SDL_Rect destMRect = {0, 0, 972, 576}; 
 
 void Draw4K(SDL_Surface* surface,SDL_Renderer* renderer0, int yid) {
     SDL_Rect img_rect2;
@@ -340,13 +340,14 @@ int sdl_main(int argc, char* argv[]) {
         SDL_PIXELFORMAT_RGBA8888, 
         SDL_TEXTUREACCESS_STREAMING, 
         surface->w, surface->h);
-
+    
     SDL_LockTexture(texture, &img_rect, &surface->pixels, &surface->pitch);
     // paint into surface pixels
     SDL_UnlockTexture(texture);
 #endif
     SDL_QueryTexture(texture, NULL, NULL, &img_rect.w, &img_rect.h);
-    printf("(%3d) w=%4d,h=%4d\n",__LINE__,img_rect.w, img_rect.h);
+    img_rect.x=0;img_rect.y=0;
+    printf("(%3d) (%4d,%4d,%4d,%4d)\n",__LINE__,img_rect.x, img_rect.y,img_rect.w, img_rect.h);
 //  SDL_FreeSurface(surface); // We don't need the surface anymore
      
     if (TTF_Init() < 0)
@@ -366,18 +367,15 @@ int sdl_main(int argc, char* argv[]) {
 
  //???????????
 
-    wchar_t MyString[]=L"arithai.com 葉綠素生技 v00.01!";
-    //????????MyString????????????
-    //???????
-    int MyStringLengh = wcslen(MyString); //???????????, ????????
-    char DecToHex[20]; //????????, ??????????
-    Uint16 PrintMyString[MyStringLengh]; //???????????????, ?????????????
-    //?????????
+    wchar_t MyString[]=L"arithai.com 葉綠素生技 v007.13.01!";
+    int MyStringLengh = wcslen(MyString); 
+    char DecToHex[20]; 
+    Uint16 PrintMyString[MyStringLengh]; 
     for (int i = 0; i < MyStringLengh; i++){
       //itoa(MyString[i], DecToHex, 16);  
         snprintf(DecToHex, sizeof(DecToHex), "%02X", MyString[i]); 
- //???MyString?????????????????, ????????DecToHex
-        PrintMyString[i]= strtol(DecToHex,NULL,16);//???DecToHex?????????????, ??????PrintMyString
+ //wchar MyString to utf5 DecToHex
+        PrintMyString[i]= strtol(DecToHex,NULL,16);
     }
     PrintMyString[MyStringLengh]={0};//????????????, ?????????????????
  
@@ -385,15 +383,15 @@ int sdl_main(int argc, char* argv[]) {
     // SDL_Surface then you have to create the surface first
     SDL_Surface* surfaceMessage =
 //    TTF_RenderText_Solid(Sans, "arithai.com v1.1!", White); 
-//    TTF_RenderText_Blended(Sans, "arithai.com ????? v1.1!", White);
+//    TTF_RenderText_Blended(Sans, "arithai.com 葉綠素生技 v1.1!", White);
       TTF_RenderUNICODE_Blended(Sans, PrintMyString, White);
 //    TTF_RenderUNICODE_Solid( Sans, PrintMyString, White );
     // now you can convert it into a texture
     SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
 
     SDL_Rect Message_rect; //create a rect
-    Message_rect.x = 972-400;  //controls the rect's x coordinate 
-    Message_rect.y = 576-100; // controls the rect's y coordinte
+    Message_rect.x = 972-450;  //controls the rect's x coordinate 
+    Message_rect.y = 576-65; // controls the rect's y coordinte
 //  Message_rect.w = 200; // controls the width of the rect
 //  Message_rect.h = 200; // controls the height of the rect
     Message_rect.w = surfaceMessage->w; // controls the width of the rect
@@ -499,8 +497,8 @@ int sdl_main(int argc, char* argv[]) {
                 if (mouseState & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
                   is_leftclick = false;
                 }
-                printf("mx=%4d,my=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
-                      mouse_x, mouse_y,
+                printf("(%4d) mx=%4d,my=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
+                      __LINE__,mouse_x, mouse_y,
                       img_rect.x,img_rect.y,img_rect.w,img_rect.h);
                 if (isMouseOver(mouse_x, mouse_y, myButton[4].rect)) {
                 }
