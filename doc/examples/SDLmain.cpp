@@ -1,6 +1,5 @@
 ﻿#define STB_IMAGE_WRITE_IMPLEMENTATION
 
-#include <locale.h>
 #include "stb_image_write.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -286,13 +285,11 @@ void getver(wchar_t *pDest, int size, const wchar_t *fixstr);
 int sdl_main(int argc, char* argv[]) {
     int i;
     wchar_t verstr[128] = {0};
-    // Set the locale to the user's default environment
-    setlocale(LC_ALL, "");
-    // Print Chinese string using wide characters
-    wprintf(L"你好，世界！\n");
+  // Print Chinese string using wide characters
+  //wprintf(L"你好，世界！\n");
     getver(verstr, sizeof(verstr), L"arithai.com 葉綠素生技");
     wprintf_s(L"verstr=%ws\n",verstr);
-    wprintf(L"===葉綠素生技\n");
+  //wprintf(L"===葉綠素生技\n");
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL Init Failed: %s\n", SDL_GetError());
