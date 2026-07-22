@@ -313,7 +313,7 @@ int sdl_main(int argc, char* argv[]) {
     }
 
     // Create Window and Renderer
-    SDL_Window* window = SDL_CreateWindow("Real Size JPG", SDL_WINDOWPOS_CENTERED, 
+    SDL_Window* window = SDL_CreateWindow("dfvmux3diff V2026.07.19.01", SDL_WINDOWPOS_CENTERED, 
         SDL_WINDOWPOS_CENTERED, 972, 576, SDL_WINDOW_SHOWN);
 //  SDL_Window* window = SDL_CreateWindow("Real Size JPG", 0, 0, width, height, SDL_WINDOW_SHOWN);
 //  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -367,7 +367,7 @@ int sdl_main(int argc, char* argv[]) {
 
  //???????????
 
-    wchar_t MyString[]=L"arithai.com 葉綠素生技 v007.13.01!";
+    wchar_t MyString[]=L"arithai.com 葉綠素生技 V2026.07.22.01!";
     int MyStringLengh = wcslen(MyString); 
     char DecToHex[20]; 
     Uint16 PrintMyString[MyStringLengh]; 
@@ -390,7 +390,7 @@ int sdl_main(int argc, char* argv[]) {
     SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
 
     SDL_Rect Message_rect; //create a rect
-    Message_rect.x = 972-450;  //controls the rect's x coordinate 
+    Message_rect.x = 972-480;  //controls the rect's x coordinate 
     Message_rect.y = 576-65; // controls the rect's y coordinte
 //  Message_rect.w = 200; // controls the width of the rect
 //  Message_rect.h = 200; // controls the height of the rect
@@ -425,6 +425,37 @@ int sdl_main(int argc, char* argv[]) {
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT) {
                 quit = 1;
+            }
+            else if (e.type == SDL_KEYDOWN) {
+            // Triggered exactly when a key is pressed down
+            // Check which specific key was pressed
+                switch (e.key.keysym.sym) {
+                    case SDLK_ESCAPE:
+                        printf("Escape key pressed! Exiting...\n");
+                        quit =1;
+                        break;
+                    case SDLK_UP:
+                        printf("Up arrow pressed!\n");
+                        break;
+                    case SDLK_SPACE:
+                        printf("Spacebar pressed!\n");
+                        break;
+                    default:
+                        printf("<<%c>>\n",e.key.keysym.sym);
+                        if(e.key.keysym.sym=='z') {
+                          printf("please press a key...\n");
+                          while (true) {
+                            char ch = getchar();
+                            if (ch != EOF) {
+                              printf("%c",ch);
+                              if (ch == 'q') break; // Exit loop if 'q' is pressed
+                            }
+                            usleep(10000); // Sleep for 10ms to prevent 100% CPU usage
+                          }
+                          printf("exit press a key...\n");
+                        }
+                        break;
+                }
             }
             else if (e.type == SDL_MOUSEWHEEL) {
                 is_dragging = false;

@@ -1,3 +1,119 @@
+20260721
+$ ./dfvmux3diff.exe ./VID20250724102442.mp4 ./VID20250724102442_r2.mp4
+Get directory [../VID20260701152055]<======
+ptfname=../VID20260701152055/data.txt,NpicSN=3
+picSN[   0]=0038
+picSN[   1]=0039
+picSN[   2]=0040
+(350) (   0,   0,2160,3840)
+20260719
+
+CFLAGS="-Wno-error=incompatible-pointer-types -lmingwex" ./configure \
+  --arch=x86_64 --target-os=mingw32 --cross-prefix=x86_64-w64-mingw32- \
+  --extra-cflags="-Wno-error=implicit-function-declaration" \
+  --extra-cxxflags="-Wno-error=implicit-function-declaration" \
+  --prefix=/usr/local \
+  --enable-shared \
+  --disable-static \
+  --enable-gpl \
+  --enable-sdl2 \
+  --disable-indev=gdigrab \
+  --disable-cuda-llvm \
+  --disable-dxva2
+
+./configure --cross-prefix=x86_64-w64-mingw32-
+
+/usr/i686-w64-mingw32/sys-root/mingw/bin
+
+/usr/x86_64-w64-mingw32/sys-root/mingw/bin
+
+mingw64-i686-gcc-g++
+mingw64-x86_x84-gcc-g++
+
+ CFLAGS="-Wno-error=incompatible-pointer-types -lmingwex" ./configure   --extra-cflags="-Wno-error=implicit-function-declaration"   --extra-cxxflags="-Wno-error=implicit-function-declaration"   --prefix=/usr/local   --arch=x86_64   --target-os=mingw32   --enable-gpl   --enable-sdl2   --disable-indev=gdigrab   --disable-cuda-llvm   --disable-dxva2
+
+mingw32 x86_64
+CFLAGS="-Wno-error=incompatible-pointer-types -lmingwex" ./configure \
+  --extra-cflags="-Wno-error=implicit-function-declaration" \
+  --extra-cxxflags="-Wno-error=implicit-function-declaration" \
+  --prefix=/usr/local \
+  --arch=i686-w64 \
+  --target-os=mingw32 \
+  --enable-gpl \
+  --enable-sdl2 \
+  --disable-indev=gdigrab \
+  --disable-cuda-llvm \
+  --disable-dxva2
+
+
+
+
+CFLAGS="-Wno-error=incompatible-pointer-types -lmingwex" ./configure \
+  --extra-cflags="-Wno-error=implicit-function-declaration" \
+  --extra-cxxflags="-Wno-error=implicit-function-declaration" \
+  --prefix=/usr/local \
+  --arch=x86_64 \
+  --target-os=mingw32 \
+  --enable-shared \
+  --disable-static \
+  --enable-gpl \
+  --enable-sdl2 \
+  --disable-indev=gdigrab \
+  --disable-cuda-llvm \
+  --disable-dxva2
+
+./configure --extra-cflags="-Wno-error=implicit-function-declaration" 
+--extra-cxxflags="-Wno-error=implicit-function-declaration" 
+--extra-cflags="-D_WIN32" --prefix=/usr/local --enable-shared --enable-gpl --disable-indev=gdigrab --disable-cuda-llvm --disable-dxva2
+
+./configure \
+  --prefix=/usr/local \
+  --arch=x86_64 \
+  --target-os=mingw32 \
+  --enable-shared \
+  --disable-static \
+  --enable-gpl \
+  --enable-libx264 \
+  --enable-libx265 \
+  --enable-sdl2
+
+mingw64-x86_64 x86_64-w64-mingw32
+Looking for ncurses-config
+checking for x86_64-w64-mingw32-ncurses-config... no
+checking for x86_64-w64-mingw32-ncurses6-config... no
+checking for x86_64-w64-mingw32-ncurses6-config... no
+checking for x86_64-w64-mingw32-ncurses5-config... no
+checking for ncurses-config... no
+checking for ncurses6-config... ncurses6-config
+checking if we have identified curses headers... none
+configure: error: No curses header-files found
+
+./configure --host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 \
+            --with-screen=ncurses  \
+            --enable-ipv6 LIBS="-lncurses" \
+            --prefix=/usr           \
+            --sysconfdir=/etc/lynx  \
+            --with-zlib             \
+            --with-bzlib            \
+            --with-ssl              \
+            --enable-ipv6           \
+            --enable-locale-charset \
+            --enable-nls            \
+
+20260718
+./configure --host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32             --with-screen=pdcurses --with-ssl               --enable-ipv6 LIBS="-lncurses"             --prefix=/usr                       --sysconfdir=/etc/lynx              --with-zlib                         --with-bzlib                        --with-ssl                                       --enable-ipv6                       --enable-locale-charset             --enable-nls
+
+./configure --host=x86_64-w64-mingw32 --target=x86_64-w64-mingw32 \
+            --with-screen=pdcurses  \
+            --enable-ipv6 LIBS="-lncurses" \
+            --prefix=/usr           \
+            --sysconfdir=/etc/lynx  \
+            --with-zlib             \
+            --with-bzlib            \
+            --with-ssl              \
+            --enable-ipv6           \
+            --enable-locale-charset \
+            --enable-nls            \
 
 20260715
 
