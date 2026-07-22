@@ -1,5 +1,6 @@
 ﻿#define STB_IMAGE_WRITE_IMPLEMENTATION
 
+#include <locale.h>
 #include "stb_image_write.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -281,14 +282,23 @@ void Draw4K(SDL_Surface* surface,SDL_Renderer* renderer0, int yid) {
     SDL_DestroyWindow(window2);
 }
 int dfvmux3diff_main(int argc, char **argv);
+void getver(wchar_t *pDest, int size, const wchar_t *fixstr);
 int sdl_main(int argc, char* argv[]) {
     int i;
+    wchar_t verstr[128] = {0};
+    // Set the locale to the user's default environment
+    setlocale(LC_ALL, "");
+    // Print Chinese string using wide characters
+    wprintf(L"你好，世界！\n");
+    getver(verstr, sizeof(verstr), L"arithai.com 葉綠素生技");
+    wprintf_s(L"verstr=%ws\n",verstr);
+    wprintf(L"===葉綠素生技\n");
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL Init Failed: %s\n", SDL_GetError());
         return 1;
     }
-
+ 
     initfDirectory();
     printf("Get directory [%s]<======\n",fDirectory);
     
@@ -313,7 +323,7 @@ int sdl_main(int argc, char* argv[]) {
     }
 
     // Create Window and Renderer
-    SDL_Window* window = SDL_CreateWindow("dfvmux3diff V2026.07.19.01", SDL_WINDOWPOS_CENTERED, 
+    SDL_Window* window = SDL_CreateWindow("dfvmux3diff V2026.07.22.01", SDL_WINDOWPOS_CENTERED, 
         SDL_WINDOWPOS_CENTERED, 972, 576, SDL_WINDOW_SHOWN);
 //  SDL_Window* window = SDL_CreateWindow("Real Size JPG", 0, 0, width, height, SDL_WINDOW_SHOWN);
 //  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -367,17 +377,22 @@ int sdl_main(int argc, char* argv[]) {
 
  //???????????
 
-    wchar_t MyString[]=L"arithai.com 葉綠素生技 V2026.07.22.01!";
+//  wchar_t MyString[]=L"arithai.com 葉綠素生技 V2026.07.22     .01!";
+    wchar_t *MyString=verstr;
     int MyStringLengh = wcslen(MyString); 
     char DecToHex[20]; 
-    Uint16 PrintMyString[MyStringLengh]; 
+    Uint16 PrintMyString[MyStringLengh];
+  //setlocale(LC_ALL, "en_US.utf8");
+  //swprintf(MyString, sizeof MyString/sizeof *MyString,
+  //          L"arithai.com 葉綠素生技 V'%s'.01", __DATE__); 
     for (int i = 0; i < MyStringLengh; i++){
       //itoa(MyString[i], DecToHex, 16);  
         snprintf(DecToHex, sizeof(DecToHex), "%02X", MyString[i]); 
  //wchar MyString to utf5 DecToHex
         PrintMyString[i]= strtol(DecToHex,NULL,16);
     }
-    PrintMyString[MyStringLengh]={0};//????????????, ?????????????????
+    PrintMyString[MyStringLengh]={0};
+//  wprintf(L"[%s]中\n",MyString);
  
     // as TTF_RenderText_Solid could only be used on
     // SDL_Surface then you have to create the surface first

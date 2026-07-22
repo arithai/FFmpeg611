@@ -1,3 +1,11 @@
+
+20260722
+How to Compile and RunOpen your Cygwin terminal.Ensure your terminal font 
+supports Unicode characters (right-click the top bar of the Mintty window,
+ go to Options > Text > Font, and select a font like Courier New or Consolas).
+Compile the code using gcc. 
+Use the -std=c99 flag or later to ensure wide character support:
+
 20260721
 $ ./dfvmux3diff.exe ./VID20250724102442.mp4 ./VID20250724102442_r2.mp4
 Get directory [../VID20260701152055]<======
