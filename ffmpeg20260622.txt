@@ -1,10 +1,25 @@
 
+20260723
+http://arithai.onlinewebshop.net/
+
 20260722
 How to Compile and RunOpen your Cygwin terminal.Ensure your terminal font 
 supports Unicode characters (right-click the top bar of the Mintty window,
  go to Options > Text > Font, and select a font like Courier New or Consolas).
 Compile the code using gcc. 
 Use the -std=c99 flag or later to ensure wide character support:
+./dfvmux3diff.exe ./VID20250724102442.mp4 ./VID20250724102442_r2.mp4
+make -fMakefile.act dfv2
+cp dfvmux3diff.exe exe
+$ ./dfvmux3diff.exe ./VID20250724102442.mp4 ./VID20250724102442_r2.mp4
+verstr=arithai.com ?????V260722.02
+
+Get directory [../VID20260701152055]<======
+ptfname=../VID20260701152055/data.txt,NpicSN=3
+picSN[   0]=0038
+picSN[   1]=0039
+picSN[   2]=0040
+(357) (   0,   0,2160,3840)
 
 20260721
 $ ./dfvmux3diff.exe ./VID20250724102442.mp4 ./VID20250724102442_r2.mp4

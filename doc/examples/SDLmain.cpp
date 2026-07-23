@@ -282,12 +282,14 @@ void Draw4K(SDL_Surface* surface,SDL_Renderer* renderer0, int yid) {
 }
 int dfvmux3diff_main(int argc, char **argv);
 void getver(wchar_t *pDest, int size, const wchar_t *fixstr);
+#include <string>
+std::string WStringToString(const std::wstring& wstr);
 int sdl_main(int argc, char* argv[]) {
     int i;
     wchar_t verstr[128] = {0};
   // Print Chinese string using wide characters
   //wprintf(L"你好，世界！\n");
-    getver(verstr, sizeof(verstr), L"arithai.com 葉綠素生技");
+    getver(verstr, sizeof(verstr), L"arithai.com/dfvmux3diff 葉綠素生技");
     wprintf_s(L"verstr=%ws\n",verstr);
   //wprintf(L"===葉綠素生技\n");
     // Initialize SDL
@@ -319,8 +321,9 @@ int sdl_main(int argc, char* argv[]) {
         SDL_Quit();
     }
 
+    std::string utf8Title = WStringToString(verstr);
     // Create Window and Renderer
-    SDL_Window* window = SDL_CreateWindow("dfvmux3diff V2026.07.22.01", SDL_WINDOWPOS_CENTERED, 
+    SDL_Window* window = SDL_CreateWindow(utf8Title.c_str(), SDL_WINDOWPOS_CENTERED, 
         SDL_WINDOWPOS_CENTERED, 972, 576, SDL_WINDOW_SHOWN);
 //  SDL_Window* window = SDL_CreateWindow("Real Size JPG", 0, 0, width, height, SDL_WINDOW_SHOWN);
 //  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -402,7 +405,7 @@ int sdl_main(int argc, char* argv[]) {
     SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
 
     SDL_Rect Message_rect; //create a rect
-    Message_rect.x = 972-480;  //controls the rect's x coordinate 
+    Message_rect.x = 972-600;  //controls the rect's x coordinate 
     Message_rect.y = 576-65; // controls the rect's y coordinte
 //  Message_rect.w = 200; // controls the width of the rect
 //  Message_rect.h = 200; // controls the height of the rect

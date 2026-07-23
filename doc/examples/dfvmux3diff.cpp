@@ -1006,7 +1006,7 @@ int dfvmux3diff_main(int argc, char **argv)
             dec_ctx->width, dec_ctx->height, dec_ctx->pix_fmt,
             dec_ctx->sample_aspect_ratio.num, dec_ctx->sample_aspect_ratio.den);
 //mux begin    
-        if (argc < 3) {
+    if (argc < 3) {
         printf("usage: %s input_file output_file looptime flag\n"
                "API example program to output a media file with libavformat.\n"
                "This program generates a synthetic audio and video stream, encodes and\n"
