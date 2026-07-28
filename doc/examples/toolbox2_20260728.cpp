@@ -840,7 +840,7 @@ AVFrame *getvideoframe(OutputStream *ost)
         }
       }
       printf("%s(%d) (%d,%d)\n",__FILE__,__LINE__,c->width, c->height);
-      fill_yuv_image(ost->tmp_frame, ost->next_pts, c->width, c->height);
+//    fill_yuv_image(ost->tmp_frame, ost->next_pts, c->width, c->height);
       sws_scale(ost->sws_ctx, (const uint8_t * const *) ost->tmp_frame->data,
                 ost->tmp_frame->linesize, 0, c->height, ost->frame->data,
                   ost->frame->linesize);
@@ -851,86 +851,47 @@ AVFrame *getvideoframe(OutputStream *ost)
     ost->frame->pts = ost->next_pts++;
     return ost->frame;
 }
-int savePicture(AVFrame *pFrame, char *out_name);
-static int writeframejpg(AVFormatContext *fmt_ctx, AVCodecContext *c,
-                         AVStream *st, AVFrame *frame, AVPacket *pkt,int frame_index)
+int getvideoframe(AVFormatContext *oc,AVCodecContext *c,AVFrame *frame,AVPacket *pkt,int frame_index)
 {
-    int ret;
-    char imgbuf[256];
-  //printf("%s(%d) %X,%X,%X\n",__FILE__,__LINE__,c,frame,pkt);
-    if(frame==0) return 1;
-    // send the frame to the encoder
-    ret = avcodec_send_frame(c, frame);
-  //printf("%s(%d) %X,%X,%X\n",__FILE__,__LINE__,c,frame,pkt);
-    if (ret < 0) {
-        fprintf(stderr, "Error sending a frame to the encoder: %s\n",
-                av_err2str(ret));
-        exit(1);
-    }
-    while (ret >= 0) {
-      //printf("%s(%d) %X,%X,%X\n",__FILE__,__LINE__,c,frame,pkt);
-        ret = avcodec_receive_packet(c, pkt);
-      //printf("write_frame %s(%d) %d ret=%d,%d,%d\n",__FILE__,__LINE__,frame->data[0][2],ret,AVERROR(EAGAIN),AVERROR_EOF);
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-            break;
-        }    
-        else if (ret < 0) {
-            fprintf(stderr, "Error encoding a frame: %s\n", av_err2str(ret));
-            exit(1);
-        }
-        //rescale output packet timestamp values from codec to stream timebase
-        av_packet_rescale_ts(pkt, c->time_base, st->time_base);
-        pkt->stream_index = st->index;
-        //Write the compressed frame to the media file.
-        //log_packet(fmt_ctx, pkt);
-
-        snprintf(imgbuf, sizeof(imgbuf), "img/x%03d.jpg",frame_index); 
-        savePicture(filt_frame, imgbuf);
-        printf("fname=%s\n",imgbuf);
-      if (0) {
-          printf("pkt->size=%d\n",pkt->size);
-          FILE *f = fopen("output.jpg", "wb");
-          fwrite(pkt->data, 1, pkt->size, f);
-          fclose(f);
-          exit(0);
-      }
-#if 0
-        ret = av_interleaved_write_frame(fmt_ctx, pkt);
-//      ret = av_write_frame(fmt_ctx, pkt);
-        /* pkt is now blank (av_interleaved_write_frame() takes ownership of
-         * its contents and resets pkt), so that no unreferencing is necessary.
-         * This would be different if one used av_write_frame(). */
-        if (ret < 0) {
-            fprintf(stderr, "Error while writing output packet: %s\n", av_err2str(ret));
-            exit(1);
-        }
-#endif
-    }
-
-    return ret == AVERROR_EOF ? 1 : 0;
-}
-int write_jpg_frame(AVFormatContext *oc, OutputStream *ost)
-{
-//return write_frame_jpg(oc, ost->enc, ost->st, getvideoframe(ost), ost->tmp_pkt, ost->next_pts);
-  return writeframejpg(oc, ost->enc, ost->st, ost->frame, ost->tmp_pkt, ost->next_pts);
-}
-static AVFrame *alloc_frame(enum AVPixelFormat pix_fmt, int width, int height)
-{
-  AVFrame *frame;
   int ret;
-  frame = av_frame_alloc();
-  if (!frame)
-    return NULL;
-  frame->format = pix_fmt;
-  frame->width  = width;
-  frame->height = height;
-//allocate the buffers for the frame data
-  ret = av_frame_get_buffer(frame, 0);
+  char imgbuf[256];
+  printf("%s(%d)\n",__FILE__,__LINE__);
+// send the frame to the encoder
+  ret = avcodec_send_frame(c, frame);
+  printf("%s(%d) %X,%X,%X\n",__FILE__,__LINE__,c,frame,pkt);
   if (ret < 0) {
-    fprintf(stderr, "Could not allocate frame data.\n");
+    fprintf(stderr, "Error sending a frame to the encoder: %s\n",
+            av_err2str(ret));
     exit(1);
   }
-  return frame;
+  while (ret >= 0) {
+    printf("%s(%d) %X,%X,%X\n",__FILE__,__LINE__,c,frame,pkt);
+    ret = avcodec_receive_packet(c, pkt);
+  //printf("write_frame %s(%d) %d ret=%d,%d,%d\n",__FILE__,__LINE__,frame->data[0][2],ret,AVERROR(EAGAIN),AVERROR_EOF);
+    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+      break;
+    }    
+    else if (ret < 0) {
+      fprintf(stderr, "Error encoding a frame: %s\n", av_err2str(ret));
+      exit(1);
+    }
+//rescale output packet timestamp values from codec to stream timebase */
+    av_packet_rescale_ts(pkt, c->time_base, st->time_base);
+    pkt->stream_index = st->index;
+//Write the compressed frame to the media file.
+//log_packet(fmt_ctx, pkt);
+    snprintf(imgbuf, sizeof(imgbuf), "img/x%03d.jpg",frame_index); 
+    savePicture(frame, imgbuf);
+    printf("fname=%s\n",imgbuf);
+    if (0) {
+      printf("pkt->size=%d\n",pkt->size);
+      FILE *f = fopen("output.jpg", "wb");
+      fwrite(pkt->data, 1, pkt->size, f);
+      fclose(f);
+      exit(0);
+    }
+  }
+  return ret == AVERROR_EOF ? 1 : 0;
 }
 void openvideo(AVFormatContext *oc, const AVCodec *codec,
                OutputStream *ost, AVDictionary *opt_arg)
@@ -970,104 +931,15 @@ void openvideo(AVFormatContext *oc, const AVCodec *codec,
     exit(1);
   }
 } 
-static void addstream(OutputStream *ost, AVFormatContext *oc,
-  const AVCodec **codec,enum AVCodecID codec_id,AVCodecContext *dec_ctx)
-{
-  AVCodecContext *c;
-  AVChannelLayout stereo_layout = AV_CHANNEL_LAYOUT_STEREO;
-  int i;
-//find the encoder 
-  *codec = avcodec_find_encoder(codec_id);
-  if (!(*codec)) {
-    fprintf(stderr, "Could not find encoder for '%s'\n",
-            avcodec_get_name(codec_id));
-    exit(1);
-  }
-  ost->tmp_pkt = av_packet_alloc();
-  if (!ost->tmp_pkt) {
-    fprintf(stderr, "Could not allocate AVPacket\n");
-    exit(1);
-  }
-  ost->st = avformat_new_stream(oc, NULL);
-  if (!ost->st) {
-    fprintf(stderr, "Could not allocate stream\n");
-    exit(1);
-  }
-  ost->st->id = oc->nb_streams-1;
-  c = avcodec_alloc_context3(*codec);
-  if (!c) {
-    fprintf(stderr, "Could not alloc an encoding context\n");
-    exit(1);
-  }
-  ost->enc = c;
-  switch ((*codec)->type) {
-    case AVMEDIA_TYPE_AUDIO:
-      c->sample_fmt  = (*codec)->sample_fmts ?
-            (*codec)->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
-      c->bit_rate    = 64000;
-      c->sample_rate = 44100;
-      if ((*codec)->supported_samplerates) {
-        c->sample_rate = (*codec)->supported_samplerates[0];
-        for (i = 0; (*codec)->supported_samplerates[i]; i++) {
-          if ((*codec)->supported_samplerates[i] == 44100)
-            c->sample_rate = 44100;
-        }
-      }
-      av_channel_layout_copy(&c->ch_layout, &stereo_layout);
-//    av_channel_layout_copy(&c->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO);
-      ost->st->time_base = (AVRational){ 1, c->sample_rate };
-      break;
-    case AVMEDIA_TYPE_VIDEO:
-      c->codec_id = codec_id;
-      c->bit_rate = 400000;
-//Resolution must be a multiple of two. */
-      #if 1
-//    c->width    = GLOBAL_HEIGHT;   //2160; //352;
-//    c->height   = GLOBAL_WIDTH;    //3840; //288;
-//    c->width    = GLOBAL_WIDTH;    //2160; //352;
-//    c->height   = GLOBAL_HEIGHT;   //3840; //288;
-      c->width    = dec_ctx->width;    //2160; //352;
-      c->height   = dec_ctx->height;   //3840; //288;
-      #else
-      c->width    = 352;
-      c->height   = 288;
-      #endif
-      // timebase: This is the fundamental unit of time (in seconds) in terms
-      // of which frame timestamps are represented. For fixed-fps content,
-      // timebase should be 1/framerate and timestamp increments should be
-      // identical to 1. */
-      ost->st->time_base = (AVRational){ 1, STREAM_FRAME_RATE };
-      c->time_base       = ost->st->time_base;
-      c->gop_size      = 12; /* emit one intra frame every twelve frames at most */
-      c->pix_fmt       = STREAM_PIX_FMT;
-      if (c->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-      //just for testing, we also add B-frames
-        c->max_b_frames = 2;
-      }
-      if (c->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
-      //Needed to avoid using macroblocks in which some coeffs overflow.
-      //This does not happen with normal video, it just happens here as
-      //the motion of the chroma plane does not match the luma plane.
-        c->mb_decision = 2;
-      }
-      break;
-    default:
-        break;
-  }
-  //Some formats want stream headers to be separate.
-  if (oc->oformat->flags & AVFMT_GLOBALHEADER)
-    c->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-}
-void copyFrame_now(int frame_index);
 int getframe(const char *filename, int frame_index)
 {
   int ret=0;
   AVPacket *packet;
   AVFrame *frame;
+  const AVOutputFormat *fmt;
   static AVFormatContext *fmt_ctx;
   const AVOutputFormat *fmt;
   AVFormatContext *oc;
-  const AVCodec *video_codec;
   AVCodecContext *dec_ctx;
   AVCodec *dec;
   int video_stream_index;
@@ -1076,7 +948,6 @@ int getframe(const char *filename, int frame_index)
   AVFilterContext *buffersink_ctx;
   AVFilterContext *buffersrc_ctx;
   AVFilterGraph *filter_graph;
-  AVDictionary *opt = NULL;
   frame = av_frame_alloc();
   filt_frame   = av_frame_alloc();
   packet = av_packet_alloc();
@@ -1203,8 +1074,14 @@ end:
   fmt = oc->oformat;
 //void add_stream(OutputStream *ost, AVFormatContext *oc,
 //                const AVCodec **codec,enum AVCodecID codec_id)
-  addstream(&video_st, oc, &video_codec, fmt->video_codec,dec_ctx);
-  openvideo(oc, video_codec, &video_st, opt);
+//add_stream start
+  video_st.tmp_pkt = av_packet_alloc();
+  if (!video_st.tmp_pkt) {
+    fprintf(stderr, "Could not allocate AVPacket\n");
+    exit(1);
+  }
+//add_stream finish
+  open_video(oc, video_codec, &video_st, opt);
 /*	
   {  
     AVFormatContext *fmt_ctx = NULL;
@@ -1283,15 +1160,13 @@ end:
 //        display_frame(filt_frame, buffersink_ctx->inputs[0]->time_base);
 #if 1
           //select the stream to encode
-          getvideoframe(&video_st);
-          printf("%s(%d),%" PRIu64 " %d\n",__FILE__,__LINE__,video_st.next_pts, frame_index);
-          if (video_st.next_pts==frame_index) {
-            copyFrame_now(video_st.next_pts);
-          //calc_edge(video_st.next_pts,video_st.enc->width, video_st.enc->height);t_pts);
-            write_jpg_frame(oc, &video_st);
-            goto end_loop;
-            break;
+          if (true) {
+            printf("%s(%d),%" PRIu64 "\n",__FILE__,__LINE__,video_st.next_pts);
+          //copyFrame_now(video_st.next_pts);
+          //calc_edge(video_st.next_pts,video_st.enc->width, video_st.enc->height);
+            getvideoframe(video_st.enc,video_st.frame,video_st.tmp_pkt,video_st.next_pts);
           }                 
+          printf("%s(%d),%" PRIu64 "\n",__FILE__,__LINE__,video_st.next_pts);
          //copyFramebefore();
 #endif
 //        av_frame_unref(filt_frame);
@@ -1301,7 +1176,6 @@ end:
     }
 //  av_packet_unref(packet);
   }
-end_loop:
   printf("%s(%d)\n",__FILE__,__LINE__);
   //Close each codec.
 //close_stream(oc, &video_st);

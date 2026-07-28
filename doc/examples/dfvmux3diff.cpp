@@ -191,8 +191,10 @@ static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
   time_base = time_base;           
 #endif           
 }
+char imgbuf[25];
+int savePicture(AVFrame *pFrame, char *out_name);
 static int write_frame(AVFormatContext *fmt_ctx, AVCodecContext *c,
-                       AVStream *st, AVFrame *frame, AVPacket *pkt)
+                       AVStream *st, AVFrame *frame, AVPacket *pkt,int frame_index)
 {
     int ret;
   //printf("%s(%d) %X,%X,%X\n",__FILE__,__LINE__,c,frame,pkt);
@@ -221,6 +223,18 @@ static int write_frame(AVFormatContext *fmt_ctx, AVCodecContext *c,
         pkt->stream_index = st->index;
         /* Write the compressed frame to the media file. */
         log_packet(fmt_ctx, pkt);
+
+        snprintf(imgbuf, sizeof(imgbuf), "img/x%03d.jpg",frame_index); 
+        savePicture(frame, imgbuf);
+        printf("fname=%s\n",imgbuf);
+      if (0) {
+          printf("pkt->size=%d\n",pkt->size);
+          FILE *f = fopen("output.jpg", "wb");
+          fwrite(pkt->data, 1, pkt->size, f);
+          fclose(f);
+          exit(0);
+      }
+
         ret = av_interleaved_write_frame(fmt_ctx, pkt);
 //      ret = av_write_frame(fmt_ctx, pkt);
         /* pkt is now blank (av_interleaved_write_frame() takes ownership of
@@ -231,6 +245,7 @@ static int write_frame(AVFormatContext *fmt_ctx, AVCodecContext *c,
             exit(1);
         }
     }
+
     return ret == AVERROR_EOF ? 1 : 0;
 }
 /* Add an output stream. */
@@ -465,7 +480,7 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
         frame->pts = av_rescale_q(ost->samples_count, (AVRational){1, c->sample_rate}, c->time_base);
         ost->samples_count += dst_nb_samples;
     }
-    return write_frame(oc, c, ost->st, frame, ost->tmp_pkt);
+    return write_frame(oc, c, ost->st, frame, ost->tmp_pkt, ost->next_pts);
 }
 /**************************************************************/
 /* video output */
@@ -628,7 +643,8 @@ static AVFrame *get_video_frame(OutputStream *ost)
                   ost->tmp_frame->linesize, 0, c->height, ost->frame->data,
                   ost->frame->linesize);
     } else {
-        printf("%s(%d)%d,(%d,%d)\n",__FILE__,__LINE__,ost->next_pts,c->width, c->height);
+        printf("%s(%d)%" PRIu64 ",(%d,%d)\n",__FILE__,__LINE__,
+          ost->next_pts,c->width, c->height);
 #if 1
         calc_histogram(ost->frame, ost->next_pts, c->width, c->height);
         calc_64x36(ost->frame, ost->next_pts, c->width, c->height);
@@ -642,6 +658,7 @@ static AVFrame *get_video_frame(OutputStream *ost)
         freeSlopeList();
 #endif        
     }
+
     ost->frame->pts = ost->next_pts++;
     return ost->frame;
 }
@@ -653,7 +670,7 @@ int rb[3][3],gb[3][3],bb[3][3];
 int re,ge,be,ra,ga,ba;
 extern void calc_matrix(int x,int y);
 void copyFrame_now(int frame_index) {
-  int x,y,x2,y2,x0,y0,Y,U,V;
+  int x,y,x2,y2;
   if(Ydiffnow == NULL) {
     frameWidth    = filt_frame->width;
     frameHeight   = filt_frame->height;
@@ -721,7 +738,6 @@ void copyFrame_now(int frame_index) {
 }
 
 void copyFramebefore() {
-  int x,y,x2,y2;
   if(Ybefore == NULL) {
     frameWidth    = filt_frame->width;
     frameHeight   = filt_frame->height;
@@ -775,7 +791,7 @@ void copyFramebefore() {
  */
 static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
 {
-    return write_frame(oc, ost->enc, ost->st, get_video_frame(ost), ost->tmp_pkt);
+    return write_frame(oc, ost->enc, ost->st, get_video_frame(ost), ost->tmp_pkt, ost->next_pts);
 }
 static void close_stream(AVFormatContext *oc, OutputStream *ost)
 {
@@ -1167,10 +1183,11 @@ int dfvmux3diff_main(int argc, char **argv)
                     if (encode_video &&
                       (!encode_audio || av_compare_ts(video_st.next_pts, video_st.enc->time_base,
                         audio_st.next_pts, audio_st.enc->time_base) <= 0)) {
-                        printf("%s(%d),%3d\n",__FILE__,__LINE__,video_st.next_pts);
+                        printf("%s(%d),%" PRIu64 "\n",__FILE__,__LINE__,video_st.next_pts);
                         copyFrame_now(video_st.next_pts);
                       //calc_edge(video_st.next_pts,video_st.enc->width, video_st.enc->height);
                         encode_video = !write_video_frame(oc, &video_st);
+
                         if(encode_video==0 && !encode_audio) 
                           goto end_video;
 
@@ -1179,7 +1196,7 @@ int dfvmux3diff_main(int argc, char **argv)
                         printf("else encode_audio %s(%d)\n",__FILE__,__LINE__);
                         encode_audio = !write_audio_frame(oc, &audio_st);
                     }                 
-                    printf("%s(%d),%3d\n",__FILE__,__LINE__,video_st.next_pts);
+                    printf("%s(%d),%" PRIu64 "\n",__FILE__,__LINE__,video_st.next_pts);
                     copyFramebefore();
 #endif
 //                  av_frame_unref(filt_frame);
@@ -1240,7 +1257,8 @@ end:
         exit(1);
     }
     now1 = time(NULL);
-    printf("diff=%lu\n",now1-now0);
+    printf("diff=%llu\n",now1-now0);
     return 1;
 //  exit(0);
 }
+

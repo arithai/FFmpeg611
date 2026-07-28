@@ -58,7 +58,8 @@ void initfDirectory(void) {
         break;
       }  
     }
-    if(ptFile!=NULL) fclose(ptFile); ptFile=NULL;
+    if(ptFile!=NULL) fclose(ptFile); 
+    ptFile=NULL;
   }
 }
 void initpicSN(void) {
@@ -88,7 +89,8 @@ void initpicSN(void) {
       }
       if(i>15) break;
     }
-    if(ptFile!=NULL) fclose(ptFile); ptFile=NULL;
+    if(ptFile!=NULL) fclose(ptFile); 
+    ptFile=NULL;
     printf("ptfname=%s,NpicSN=%d\n",ptfname,NpicSN);
   }
 }
@@ -118,12 +120,14 @@ void initPoint(int picID) {
           if(totp>15) break;
         } 
     }
-    if(ptFile!=NULL) fclose(ptFile); ptFile=NULL;
+    if(ptFile!=NULL) fclose(ptFile); 
+    ptFile=NULL;
     nPt[picID] = totp;
   } else {
     // file doesn't exist
     ptFile = fopen(ptfname,"wt");
-    if(ptFile!=NULL) fclose(ptFile); ptFile=NULL;
+    if(ptFile!=NULL) fclose(ptFile); 
+    ptFile=NULL;
     nPt[picID] = 0;
   }
 }
@@ -258,7 +262,7 @@ void Draw4K(SDL_Surface* surface,SDL_Renderer* renderer0, int yid) {
     // Calculate the total size in bytes (pitch * height)
     // Assuming 32-bit (4 bytes) pixels, we divide by 4 to get the vector size
     size_t pixelCount = (surface2->w * surface2->h) ;
-    printf("%d,%d,%d,%d,%d\n",__LINE__,pixelCount,surface2->pitch,surface2->h,surface2->w);  
+    printf("%d,%lld,%d,%d,%d\n",__LINE__,pixelCount,surface2->pitch,surface2->h,surface2->w);  
     // Create the vector and directly copy the pixel memory
     Uint32* pixelsData = static_cast<Uint32*>(surface2->pixels);
     std::vector<Uint32> pixels2(pixelsData, pixelsData + pixelCount);
@@ -284,6 +288,8 @@ int dfvmux3diff_main(int argc, char **argv);
 void getver(wchar_t *pDest, int size, const wchar_t *fixstr);
 #include <string>
 std::string WStringToString(const std::wstring& wstr);
+void mProduct(double x,double y);
+int getframe(const char *filename, int frame_index);
 int sdl_main(int argc, char* argv[]) {
     int i;
     wchar_t verstr[128] = {0};
@@ -436,6 +442,8 @@ int sdl_main(int argc, char* argv[]) {
     int is_extending = 0;
     SDL_Event e;
     int result = 0;
+    char cmd[10]={0};
+    char *cmdp=cmd;
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT) {
@@ -461,9 +469,18 @@ int sdl_main(int argc, char* argv[]) {
                           printf("please press a key...\n");
                           while (true) {
                             char ch = getchar();
-                            if (ch != EOF) {
-                              printf("%c",ch);
+                            if (ch == 0x0A) {
+                              *cmdp=0;printf("ch==0x0A,%s\n",cmd);
+                              if(!strcmp(cmd,"cal")) {
+                                mProduct(1.1,2.2);
+                              }
+                              cmd[0]=0;cmdp=cmd;
+                              break;
+                            }
+                            else if (ch != EOF) {
+                            //printf("%c",ch);
                               if (ch == 'q') break; // Exit loop if 'q' is pressed
+                              cmdp[0]=ch;cmdp++;
                             }
                             usleep(10000); // Sleep for 10ms to prevent 100% CPU usage
                           }
@@ -546,10 +563,13 @@ int sdl_main(int argc, char* argv[]) {
                 printf("(%4d) mx=%4d,my=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
                       __LINE__,mouse_x, mouse_y,
                       img_rect.x,img_rect.y,img_rect.w,img_rect.h);
-                if (isMouseOver(mouse_x, mouse_y, myButton[4].rect)) {
+                if (false) {
                 }
                 else if (isMouseOver(mouse_x, mouse_y, myButton[5].rect)) {
                   myButton[5].isPressed = true;
+                }
+                else if (isMouseOver(mouse_x, mouse_y, myButton[4].rect)) {
+                  myButton[4].isPressed = true;
                 }
                 else if (isMouseOver(mouse_x, mouse_y, myButton[0].rect)) {
                       myButton[0].isPressed = true;
@@ -613,7 +633,7 @@ int sdl_main(int argc, char* argv[]) {
                         printf("(%3d) x=%3d,y=%3d,px=%3d,py=%3d,now=%3d,pic=%3d\n",__LINE__,x,y,
                           ptClick.x,ptClick.y,nowpicID,picSN[nowpicID]); 
                         putPoint(nowpicID, ptClick.x, ptClick.y);
-                        printf("Click,%3d,%4d,%4d,%4d,%4d\n",nowpicID, mouse_x, mouse_y,
+                        printf("Click,%3d,%4d,%4d,%4d,%4d,%4d,%4d\n",nowpicID, mouse_x, mouse_y,
                            img_rect.x,img_rect.y,img_rect.w,img_rect.h);
                       }
                     }
@@ -707,8 +727,13 @@ int sdl_main(int argc, char* argv[]) {
           printf("call dfvmux3diff_main..\n");
 
           result = dfvmux3diff_main(argc, argv);
-           
+          result = result; 
           printf("Quit dfvmux3diff_main..\n");
+        }
+        if (myButton[4].isPressed) {
+          printf("%s(%4d) %s\n",__FILE__,__LINE__,argv[1]);
+          myButton[4].isPressed = false;          
+          getframe(argv[1], 10);
         }
 //DrawCircle
         int n=nPt[nowpicID];
@@ -728,7 +753,7 @@ int sdl_main(int argc, char* argv[]) {
 
         SDL_RenderPresent(renderer);
     }
-LOOPexit:
+//LOOPexit:
     // Clean up
     SDL_FreeSurface(surfaceMessage);
     SDL_DestroyTexture(Message);
