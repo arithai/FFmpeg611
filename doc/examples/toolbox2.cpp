@@ -810,10 +810,10 @@ typedef struct OutputStream {
     struct SwsContext *sws_ctx;
     struct SwrContext *swr_ctx;
 } OutputStream;
-void copy_yuv_image(AVFrame *pict, int frame_index,
+void copyyuvimage(AVFrame *pict, int frame_index,
                     int width, int height) {
-  int x,y,x2,y2;
-  printf("copy_yuv_image %s(%d)\n",__FILE__,__LINE__);
+  int x,y,x2,y2,Y0;
+  printf("copy_yuv_image %s(%d),(%d,%d)\n",__FILE__,__LINE__,filt_frame->linesize[0],pict->linesize[0]);
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x++) {
       x2=x/2;
@@ -824,7 +824,15 @@ void copy_yuv_image(AVFrame *pict, int frame_index,
         pict->data[0][(2*y2+1) * pict->linesize[0] + 2*x2]=BLACKY;
         pict->data[0][(2*y2+1) * pict->linesize[0] + 2*x2+1]=BLACKY;
       }
-      else pict->data[0][y * pict->linesize[0] + x] = filt_frame->data[0][y * filt_frame->linesize[0] + x];
+      else {
+        Y0 = filt_frame->data[0][y * filt_frame->linesize[0] + x];
+        if(Y0<32) {
+          pict->data[0][y * pict->linesize[0] + x] = BLACKY;
+        }
+        else {
+          pict->data[0][y * pict->linesize[0] + x] = Y0;
+        }
+      } 
     }
   }  
   for (y = 0; y < height/2; y++) {
@@ -854,7 +862,7 @@ AVFrame *getvideoframe(OutputStream *ost)
   printf("%s(%d)\n",__FILE__,__LINE__);
   if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
   //as we only generate a YUV420P picture, we must convert it
-  //to the codec pixel format if needed */
+  //to the codec pixel format if needed
     if (!ost->sws_ctx) {
       ost->sws_ctx = sws_getContext(c->width, c->height,
                                     AV_PIX_FMT_YUV420P,
@@ -875,7 +883,7 @@ AVFrame *getvideoframe(OutputStream *ost)
     } else {
 //    printf("%s(%d)%" PRIu64 ",(%d,%d),%X\n",__FILE__,__LINE__,
 //           ost->next_pts,c->width, c->height,ost->tmp_frame);
-      copy_yuv_image(ost->frame, ost->next_pts, c->width, c->height);
+      copyyuvimage(ost->frame, ost->next_pts, c->width, c->height);
     }
     ost->frame->pts = ost->next_pts++;
     return ost->frame;
@@ -888,7 +896,7 @@ static int writeframejpg(AVFormatContext *fmt_ctx, AVCodecContext *c,
     char imgbuf[256];
   //printf("%s(%d) %X,%X,%X\n",__FILE__,__LINE__,c,frame,pkt);
     if(frame==0) return 1;
-    // send the frame to the encoder
+  //send the frame to the encoder
     ret = avcodec_send_frame(c, frame);
   //printf("%s(%d) %X,%X,%X\n",__FILE__,__LINE__,c,frame,pkt);
     if (ret < 0) {
@@ -897,54 +905,54 @@ static int writeframejpg(AVFormatContext *fmt_ctx, AVCodecContext *c,
         exit(1);
     }
     while (ret >= 0) {
-      //printf("%s(%d) %X,%X,%X\n",__FILE__,__LINE__,c,frame,pkt);
-        ret = avcodec_receive_packet(c, pkt);
-      //printf("write_frame %s(%d) %d ret=%d,%d,%d\n",__FILE__,__LINE__,frame->data[0][2],ret,AVERROR(EAGAIN),AVERROR_EOF);
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-            break;
-        }    
-        else if (ret < 0) {
-            fprintf(stderr, "Error encoding a frame: %s\n", av_err2str(ret));
-            exit(1);
-        }
-        //rescale output packet timestamp values from codec to stream timebase
-        av_packet_rescale_ts(pkt, c->time_base, st->time_base);
-        pkt->stream_index = st->index;
-        //Write the compressed frame to the media file.
-        //log_packet(fmt_ctx, pkt);
-
-        snprintf(imgbuf, sizeof(imgbuf), "img/x%03d.jpg",frame_index); 
-//      savePicture(filt_frame, imgbuf);
-        savePicture(frame, imgbuf);
-        printf("fname=%s\n",imgbuf);
-      if (0) {
-          printf("pkt->size=%d\n",pkt->size);
-          FILE *f = fopen("output.jpg", "wb");
-          fwrite(pkt->data, 1, pkt->size, f);
-          fclose(f);
-          exit(0);
+    //printf("%s(%d) %X,%X,%X\n",__FILE__,__LINE__,c,frame,pkt);
+      ret = avcodec_receive_packet(c, pkt);
+    //printf("write_frame %s(%d) %d ret=%d,%d,%d\n",__FILE__,__LINE__,frame->data[0][2],ret,AVERROR(EAGAIN),AVERROR_EOF);
+      if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+        break;
+      }    
+      else if (ret < 0) {
+        fprintf(stderr, "Error encoding a frame: %s\n", av_err2str(ret));
+        exit(1);
       }
-#if 0
-        ret = av_interleaved_write_frame(fmt_ctx, pkt);
-//      ret = av_write_frame(fmt_ctx, pkt);
-        // pkt is now blank (av_interleaved_write_frame() takes ownership of
-        // its contents and resets pkt), so that no unreferencing is necessary.
-        // This would be different if one used av_write_frame(). */
-        if (ret < 0) {
-          fprintf(stderr, "Error while writing output packet: %s\n", av_err2str(ret));
-          exit(1);
-        }
-#endif
-    }
+    //rescale output packet timestamp values from codec to stream timebase
+      av_packet_rescale_ts(pkt, c->time_base, st->time_base);
+      pkt->stream_index = st->index;
+    //Write the compressed frame to the media file.
+    //log_packet(fmt_ctx, pkt);
 
-    return ret == AVERROR_EOF ? 1 : 0;
+      snprintf(imgbuf, sizeof(imgbuf), "img/x%03d.jpg",frame_index); 
+//    savePicture(filt_frame, imgbuf);
+      savePicture(frame, imgbuf);
+      printf("fname=%s\n",imgbuf);
+      if (0) {
+        printf("pkt->size=%d\n",pkt->size);
+        FILE *f = fopen("output.jpg", "wb");
+        fwrite(pkt->data, 1, pkt->size, f);
+        fclose(f);
+        exit(0);
+     }
+#if 0
+    ret = av_interleaved_write_frame(fmt_ctx, pkt);
+//  ret = av_write_frame(fmt_ctx, pkt);
+  //pkt is now blank (av_interleaved_write_frame() takes ownership of
+  //its contents and resets pkt), so that no unreferencing is necessary.
+  //This would be different if one used av_write_frame(). */
+    if (ret < 0) {
+      fprintf(stderr, "Error while writing output packet: %s\n", av_err2str(ret));
+      exit(1);
+    }
+#endif
+  }
+
+  return ret == AVERROR_EOF ? 1 : 0;
 }
 int writejpgframe(AVFormatContext *oc, OutputStream *ost)
 {
 //return write_frame_jpg(oc, ost->enc, ost->st, getvideoframe(ost), ost->tmp_pkt, ost->next_pts);
   return writeframejpg(oc, ost->enc, ost->st, ost->frame, ost->tmp_pkt, ost->next_pts);
 }
-static AVFrame *alloc_frame(enum AVPixelFormat pix_fmt, int width, int height)
+static AVFrame *allocframe(enum AVPixelFormat pix_fmt, int width, int height)
 {
   AVFrame *frame;
   int ret;
@@ -977,7 +985,7 @@ void openvideo(AVFormatContext *oc, const AVCodec *codec,
     exit(1);
   }
 //allocate and init a re-usable frame
-  ost->frame = alloc_frame(c->pix_fmt, c->width, c->height);
+  ost->frame = allocframe(c->pix_fmt, c->width, c->height);
   if (!ost->frame) {
     fprintf(stderr, "Could not allocate video frame\n");
     exit(1);
@@ -988,7 +996,7 @@ void openvideo(AVFormatContext *oc, const AVCodec *codec,
 //output format.
   ost->tmp_frame = NULL;
   if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
-    ost->tmp_frame = alloc_frame(AV_PIX_FMT_YUV420P, c->width, c->height);
+    ost->tmp_frame = allocframe(AV_PIX_FMT_YUV420P, c->width, c->height);
     if (!ost->tmp_frame) {
       fprintf(stderr, "Could not allocate temporary video frame\n");
       exit(1);
