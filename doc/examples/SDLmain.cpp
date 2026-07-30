@@ -444,6 +444,7 @@ int sdl_main(int argc, char* argv[]) {
     int result = 0;
     char cmd[10]={0};
     char *cmdp=cmd;
+    int frame_index = 2;
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT) {
@@ -464,6 +465,8 @@ int sdl_main(int argc, char* argv[]) {
                         printf("Spacebar pressed!\n");
                         break;
                     default:
+                        char *cmdn;
+                        int n;
                         printf("<<%c>>\n",e.key.keysym.sym);
                         if(e.key.keysym.sym=='z') {
                           printf("please press a key...\n");
@@ -473,6 +476,13 @@ int sdl_main(int argc, char* argv[]) {
                               *cmdp=0;printf("ch==0x0A,%s\n",cmd);
                               if(!strcmp(cmd,"cal")) {
                                 mProduct(1.1,2.2);
+                              }
+                              else if(!memcmp(cmd,"load",4)) {
+                                cmdn = cmd+5;
+                                n = atoi(cmdn);
+                                frame_index = n;
+                                printf("load %d\n",n);
+                                myButton[4].isPressed = true;
                               }
                               cmd[0]=0;cmdp=cmd;
                               break;
@@ -601,7 +611,7 @@ int sdl_main(int argc, char* argv[]) {
                 }
                 else {
                   if (mouse_x >= img_rect.x && mouse_x <= img_rect.x + img_rect.w &&
-                    mouse_y >= img_rect.y && mouse_y <= img_rect.y + img_rect.h) {
+                      mouse_y >= img_rect.y && mouse_y <= img_rect.y + img_rect.h) {
                     is_dragging = true;
                     offset_x = mouse_x - img_rect.x;
                     offset_y = mouse_y - img_rect.y;
@@ -675,6 +685,16 @@ int sdl_main(int argc, char* argv[]) {
             }
         }
 
+        if (myButton[4].isPressed) {
+          char imgbuf[256];
+          printf("%s(%4d) %s\n",__FILE__,__LINE__,argv[1]);
+          myButton[4].isPressed = false;          
+          getframe(argv[1], frame_index);
+          snprintf(imgbuf, sizeof(imgbuf), "img/x%03d.jpg",frame_index); 
+          surface = IMG_Load(imgbuf);
+          texture = SDL_CreateTextureFromSurface(renderer, surface);          
+        }
+
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
@@ -730,11 +750,7 @@ int sdl_main(int argc, char* argv[]) {
           result = result; 
           printf("Quit dfvmux3diff_main..\n");
         }
-        if (myButton[4].isPressed) {
-          printf("%s(%4d) %s\n",__FILE__,__LINE__,argv[1]);
-          myButton[4].isPressed = false;          
-          getframe(argv[1], 10);
-        }
+
 //DrawCircle
         int n=nPt[nowpicID];
         if(n>10) n=10;

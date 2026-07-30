@@ -810,6 +810,34 @@ typedef struct OutputStream {
     struct SwsContext *sws_ctx;
     struct SwrContext *swr_ctx;
 } OutputStream;
+void copy_yuv_image(AVFrame *pict, int frame_index,
+                    int width, int height) {
+  int x,y,x2,y2;
+  printf("copy_yuv_image %s(%d)\n",__FILE__,__LINE__);
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x++) {
+      x2=x/2;
+      y2=y/2;
+      if(x2==y2) {
+        pict->data[0][2*y2     * pict->linesize[0] + 2*x2]=BLACKY;
+        pict->data[0][2*y2     * pict->linesize[0] + 2*x2+1]=BLACKY;
+        pict->data[0][(2*y2+1) * pict->linesize[0] + 2*x2]=BLACKY;
+        pict->data[0][(2*y2+1) * pict->linesize[0] + 2*x2+1]=BLACKY;
+      }
+      else pict->data[0][y * pict->linesize[0] + x] = filt_frame->data[0][y * filt_frame->linesize[0] + x];
+    }
+  }  
+  for (y = 0; y < height/2; y++) {
+    for (x = 0; x < width/2; x++) {
+      pict->data[1][y * pict->linesize[1] + x] = filt_frame->data[1][y * filt_frame->linesize[1] + x];
+      pict->data[2][y * pict->linesize[2] + x] = filt_frame->data[2][y * filt_frame->linesize[2] + x];          
+      if(x==y) {
+        pict->data[1][y * pict->linesize[1] + x] =BLACKU;
+        pict->data[2][y * pict->linesize[2] + x] =BLACKV;
+      }
+    }
+  }     
+}
 AVFrame *getvideoframe(OutputStream *ost)
 {
   AVCodecContext *c = ost->enc;
@@ -840,13 +868,14 @@ AVFrame *getvideoframe(OutputStream *ost)
         }
       }
       printf("%s(%d) (%d,%d)\n",__FILE__,__LINE__,c->width, c->height);
-      fill_yuv_image(ost->tmp_frame, ost->next_pts, c->width, c->height);
+//    copy_yuv_image(ost->frame, ost->next_pts, c->width, c->height);
       sws_scale(ost->sws_ctx, (const uint8_t * const *) ost->tmp_frame->data,
                 ost->tmp_frame->linesize, 0, c->height, ost->frame->data,
                   ost->frame->linesize);
     } else {
-      printf("%s(%d)%" PRIu64 ",(%d,%d)\n",__FILE__,__LINE__,
-             ost->next_pts,c->width, c->height);
+//    printf("%s(%d)%" PRIu64 ",(%d,%d),%X\n",__FILE__,__LINE__,
+//           ost->next_pts,c->width, c->height,ost->tmp_frame);
+      copy_yuv_image(ost->frame, ost->next_pts, c->width, c->height);
     }
     ost->frame->pts = ost->next_pts++;
     return ost->frame;
@@ -885,7 +914,8 @@ static int writeframejpg(AVFormatContext *fmt_ctx, AVCodecContext *c,
         //log_packet(fmt_ctx, pkt);
 
         snprintf(imgbuf, sizeof(imgbuf), "img/x%03d.jpg",frame_index); 
-        savePicture(filt_frame, imgbuf);
+//      savePicture(filt_frame, imgbuf);
+        savePicture(frame, imgbuf);
         printf("fname=%s\n",imgbuf);
       if (0) {
           printf("pkt->size=%d\n",pkt->size);
@@ -897,19 +927,19 @@ static int writeframejpg(AVFormatContext *fmt_ctx, AVCodecContext *c,
 #if 0
         ret = av_interleaved_write_frame(fmt_ctx, pkt);
 //      ret = av_write_frame(fmt_ctx, pkt);
-        /* pkt is now blank (av_interleaved_write_frame() takes ownership of
-         * its contents and resets pkt), so that no unreferencing is necessary.
-         * This would be different if one used av_write_frame(). */
+        // pkt is now blank (av_interleaved_write_frame() takes ownership of
+        // its contents and resets pkt), so that no unreferencing is necessary.
+        // This would be different if one used av_write_frame(). */
         if (ret < 0) {
-            fprintf(stderr, "Error while writing output packet: %s\n", av_err2str(ret));
-            exit(1);
+          fprintf(stderr, "Error while writing output packet: %s\n", av_err2str(ret));
+          exit(1);
         }
 #endif
     }
 
     return ret == AVERROR_EOF ? 1 : 0;
 }
-int write_jpg_frame(AVFormatContext *oc, OutputStream *ost)
+int writejpgframe(AVFormatContext *oc, OutputStream *ost)
 {
 //return write_frame_jpg(oc, ost->enc, ost->st, getvideoframe(ost), ost->tmp_pkt, ost->next_pts);
   return writeframejpg(oc, ost->enc, ost->st, ost->frame, ost->tmp_pkt, ost->next_pts);
@@ -952,6 +982,7 @@ void openvideo(AVFormatContext *oc, const AVCodec *codec,
     fprintf(stderr, "Could not allocate video frame\n");
     exit(1);
   }
+//printf("%s(%d) %X,%d,%d\n",__FILE__,__LINE__,ost->frame,c->pix_fmt,AV_PIX_FMT_YUV420P);
 //If the output format is not YUV420P, then a temporary YUV420P
 //picture is needed too. It is then converted to the required
 //output format.
@@ -962,6 +993,7 @@ void openvideo(AVFormatContext *oc, const AVCodec *codec,
       fprintf(stderr, "Could not allocate temporary video frame\n");
       exit(1);
     }
+  //printf("%s(%d) %X\n",__FILE__,__LINE__,ost->tmp_frame);
   }
 //copy the stream parameters to the muxer
   ret = avcodec_parameters_from_context(ost->st->codecpar, c);
@@ -1028,6 +1060,7 @@ static void addstream(OutputStream *ost, AVFormatContext *oc,
 //    c->height   = GLOBAL_HEIGHT;   //3840; //288;
       c->width    = dec_ctx->width;    //2160; //352;
       c->height   = dec_ctx->height;   //3840; //288;
+      printf("%s(%d) %d,%d\n",__FILE__,__LINE__,c->width,c->height);
       #else
       c->width    = 352;
       c->height   = 288;
@@ -1288,7 +1321,7 @@ end:
           if (video_st.next_pts==frame_index) {
             copyFrame_now(video_st.next_pts);
           //calc_edge(video_st.next_pts,video_st.enc->width, video_st.enc->height);t_pts);
-            write_jpg_frame(oc, &video_st);
+            writejpgframe(oc, &video_st);
             goto end_loop;
             break;
           }                 
