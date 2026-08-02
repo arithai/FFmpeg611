@@ -1,5 +1,11 @@
 #2026.07.11 arithmetic categorical theory act with SDL UI
 # use pkg-config for getting CFLAGS and LDLIBS
+DEBUG ?= 1
+ifeq ($(DEBUG), 1)
+    CFLAGS =-DDEBUG
+else
+    CFLAGS=-DNDEBUG
+endif
 #CC = g++
 CC = x86_64-w64-mingw32-g++
 #CC = i686-w64-mingw32-g++

@@ -36,7 +36,7 @@ int nPt[3];
 FILE *ptFile=NULL;
 char fDirectory[MAX_LINE_LENGTH];
 char ptfname[MAX_LINE_LENGTH];
-char picSN[20];
+int picSN[20];
 int NpicSN;
 char buffer[MAX_LINE_LENGTH];
 void initfDirectory(void) {
@@ -618,9 +618,11 @@ int sdl_main(int argc, char* argv[]) {
             is_dragging = true;
             offset_x = mouse_x - img_rect.x;
             offset_y = mouse_y - img_rect.y;
-            printf("mx=%4d,my=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
-                   mouse_x, mouse_y,
+#ifdef DEBUG
+            printf("%d mx=%4d,my=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
+                   __LINE__,mouse_x, mouse_y,
                    img_rect.x,img_rect.y,img_rect.w,img_rect.h);
+#endif
           }
           is_ClickingOnly = true;
         }    
@@ -645,7 +647,7 @@ int sdl_main(int argc, char* argv[]) {
                 printf("(%3d) x=%3d,y=%3d,px=%3d,py=%3d,now=%3d,pic=%3d\n",__LINE__,x,y,
                 ptClick.x,ptClick.y,nowpicID,picSN[nowpicID]); 
                 putPoint(nowpicID, ptClick.x, ptClick.y);
-                printf("Click,%3d,%4d,%4d,%4d,%4d,%4d,%4d\n",nowpicID, mouse_x, mouse_y,
+                printf("%d Click,%3d,%4d,%4d,%4d,%4d,%4d,%4d\n",__LINE__,nowpicID, mouse_x, mouse_y,
                      img_rect.x,img_rect.y,img_rect.w,img_rect.h);
               }
               else {
@@ -701,7 +703,7 @@ int sdl_main(int argc, char* argv[]) {
                   }
                   fclose(ptFile);
                 }
-                rightclickcount=0;
+                rightclickcount=0;ptClickn=-1;ptClickn2=-1;
               }
             }
           }
@@ -716,9 +718,11 @@ int sdl_main(int argc, char* argv[]) {
         //srcRect.h = img_rect.h;
           zoomFactorX = 18;
           zoomFactorY = 32;
-          printf("sx=%4d,sy=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
-                 srcRect.x, srcRect.y,
+#ifdef DEBUG
+          printf("%d,sx=%4d,sy=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
+                 __LINE__,srcRect.x, srcRect.y,
                  img_rect.x,img_rect.y,img_rect.w,img_rect.h);
+#endif
           if (e.button.button == SDL_BUTTON_LEFT) {
             myButton[0].isPressed = false; // Reset state when released
             myButton[1].isPressed = false; // Reset state when released
@@ -731,9 +735,11 @@ int sdl_main(int argc, char* argv[]) {
           SDL_GetMouseState(&mouse_x, &mouse_y);
           img_rect.x = mouse_x - offset_x;
           img_rect.y = mouse_y - offset_y;
-          printf("mx=%4d,my=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
-                 mouse_x, mouse_y,
+#ifdef DEBUG
+          printf("%d,mx=%4d,my=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
+                 __LINE__,mouse_x, mouse_y,
                  img_rect.x,img_rect.y,img_rect.w,img_rect.h);
+#endif
         }
       }
     } //SDL_KEYDOWN,SDL_QUIT
@@ -803,18 +809,25 @@ int sdl_main(int argc, char* argv[]) {
       printf("Quit dfvmux3diff_main..\n");
     }
 
+    if(ptClick.x>=0 && ptClick.y>=0) {
+      SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); 
+      DrawCircle(renderer, ptClick.x-srcRect.x, ptClick.y-srcRect.y, 10);
+    } 
+
 //DrawCircle
     int n=nPt[nowpicID];
     if(n>10) n=10;
     for(int i=0;i<n;i++) {
 //    circleColor(renderer, pt[nowpicID][i].x, pt[nowpicID][i].y, 50, 0xFF0000FF);
-      SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); 
+      if(ptClickn==i) {
+        SDL_SetRenderDrawColor(renderer, 0,   0, 255, 255); 
+      }
+      else {
+        SDL_SetRenderDrawColor(renderer, 255, 0,   0, 255); 
+      }  
       DrawCircle(renderer, pt[nowpicID][i].x-srcRect.x, pt[nowpicID][i].y-srcRect.y, 10);
+
     }
-    if(ptClick.x>=0 && ptClick.y>=0) {
-      SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); 
-      DrawCircle(renderer, ptClick.x-srcRect.x, ptClick.y-srcRect.y, 10);
-    } 
 
     SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
     SDL_RenderPresent(renderer);
