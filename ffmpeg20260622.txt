@@ -408,10 +408,13 @@ usage: ffmpeg [options] [[infile options] -i infile]... {[outfile options] outfi
 
 https://github.com/livepeer/FFmpeg-6.1.1.git
 
-ffmpeg -i VID20260701152055.mp4 VID20260701152055/x%03d.jpg
-ffmpeg -i VID20260611082732.mp4 VID20260611082732/x%03d.jpg
+ffmpeg -i VID20260802132623.mp4 VID20260802132623/x%04d.jpg
+ffmpeg -i VID20260611082732.mp4 VID20260611082732/x%04d.jpg
 
 ffmpeg -i input.mp4 output_%03d.jpeg
+
+
+./dfvmux3diff VID20260802131520.mp4 VID20260802131520_r1.mp4
 
 ./dfvmux3diff VID20260611082732.mp4 VID20260611082732_r1.mp4
 
