@@ -2,33 +2,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 typedef struct {
     uint8_t dim;
     double *data;
 } vector_t;
 
-
-/*
-Структура матрицы
-cols - количество столбцов
-rows - количество строк
-data - двумерный массив
-*/
+//cols - rows - data - 
 typedef struct {
-    uint8_t cols;
-    uint8_t rows;
-    double **data;
-    uint8_t is_square;
+  uint8_t cols;
+  uint8_t rows;
+  double **data;
+  uint8_t is_square;
 } matrix_t;
 
-
-// ******************************************
-//
 // CONSTRUCTING AND DESTROYING A MATRIX STRUCT
-//
-// ******************************************
-
 vector_t *vector_new(uint8_t dim);
 matrix_t *matrix_new(uint8_t rows, uint8_t cols);
 
@@ -42,43 +29,24 @@ matrix_t *matrix_from_vec(uint8_t rows, uint8_t cols, vector_t *v);
 vector_t *vector_from_arr(uint8_t dim, double *values);
 void matrix_free(matrix_t *m);
 void vector_free(vector_t *v);
-
-// ******************************************
-//
+ 
 // HELP FUNCTIONS
-//
-// ******************************************
-
 uint8_t matrix_check_row(matrix_t *m, uint8_t row);
 uint8_t matrix_check_col(matrix_t *m, uint8_t col);
 uint8_t matrix_check_dim(matrix_t *m, uint8_t row, uint8_t col);
 uint8_t vector_check_dim(vector_t *v, uint8_t dim);
 
-// ******************************************
-//
 // MATRIX EQUALITY
-//
-// ******************************************
 uint8_t vector_eq_dim(vector_t *v1, vector_t *v2);
 uint8_t matrix_eq_dim(matrix_t *m1, matrix_t *m2);
 uint8_t vector_eq(vector_t *v1, vector_t *v2, double tolerance);
 uint8_t matrix_eq(matrix_t *m1, matrix_t *m2, double tolerance);
 
-
-// ******************************************
-//
 // MATRIX PRINTING
-//
-// ******************************************
 void matrix_print(matrix_t *m);
 void vector_print(vector_t *v);
 
-// *******************************************
-//
 // Accessing and modifying matrix elements
-//
-// *******************************************
-
 double vector_get_el(vector_t *v, uint8_t i);
 double matrix_get_el(matrix_t *m, uint8_t i, uint8_t j);
 vector_t *matrix_get_col(matrix_t *m, uint8_t col);
@@ -108,14 +76,7 @@ vector_t *vector_mult_scalar(vector_t *v, double value, double add);
 uint8_t vector_add_to_el_ip(vector_t *v, uint8_t element, double value);
 vector_t *vector_add_to_el(vector_t *v, uint8_t element, double value);
 
-
-
-// *******************************************
-//
 // Modifying the matrix structure
-//
-// *******************************************
-
 matrix_t *matrix_rem_col(matrix_t *m, uint8_t col);
 matrix_t *matrix_rem_row(matrix_t *m, uint8_t row);
 
@@ -141,11 +102,14 @@ double vector_norm(vector_t *v);
 uint8_t vector_normalize_ip(vector_t *v);
 vector_t *vector_normalize(vector_t *v);
 
-
-// *******************************************
-//
 // Matrix invertion
-//
-// *******************************************
-
 matrix_t *matrix_invert(matrix_t *m1);
+
+//Image 
+vector_t *ivector_new(double u1,double u2);
+vector_t *ivector3_new(double x1,double x2,double x3);
+vector_t *ivector6_new(double x1,double x2,double x3,
+                       double x4,double x5,double x6);
+matrix_t *matrix_from_vectors(vector_t *u1,vector_t *u2);
+matrix_t *SolveB_from_Ax(matrix_t *A,vector_t *x); //Ab=x
+

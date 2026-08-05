@@ -291,6 +291,8 @@ void getver(wchar_t *pDest, int size, const wchar_t *fixstr);
 std::string WStringToString(const std::wstring& wstr);
 void mProduct(double x,double y);
 int getframe(const char *filename, int frame_index);
+//matrix computation
+#include "matrix.h"
 int sdl_main(int argc, char* argv[]) {
   int i;
   wchar_t verstr[128] = {0};
@@ -470,8 +472,21 @@ int sdl_main(int argc, char* argv[]) {
             char *cmdn;
             int n;
             printf("<<%c>>\n",e.key.keysym.sym);
-            if(e.key.keysym.sym=='z') {
+            if(e.key.keysym.sym=='a') {
+
+  vector_t *u1=(vector_t *)ivector_new(pt[nowpicID][0].x,pt[nowpicID][0].y);
+  vector_t *u2=(vector_t *)ivector_new(pt[nowpicID][1].x,pt[nowpicID][1].y);
+  vector_t *xv1=(vector_t *)ivector6_new(0,0,0.3,0,0,0.8);
+  matrix_t *A=(matrix_t *)matrix_from_vectors(u1,u2);
+  matrix_t *b=(matrix_t *)SolveB_from_Ax(A,xv1);
+  vector_t *u3=(vector_t *)ivector_new(pt[nowpicID][2].x,pt[nowpicID][2].y);
+  vector_t *xv3=(vector_t *)matrix_mult_vector(b, u3);
+  vector_print(xv3);
+
+            }
+            else if(e.key.keysym.sym=='z') {
               printf("please press a key...\n");
+
               while (true) {
                 char ch = getchar();
                 if (ch == 0x0A) {
