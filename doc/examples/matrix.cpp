@@ -69,7 +69,7 @@ vector_t *vector_copy(vector_t *v)
 {
   if (v == NULL)
   {
-    printf("vector_copy: VECTOR IS NULL");
+    printf("vector_copy: VECTOR IS NULL\n");
     return NULL;
   }
   vector_t *newm = vector_new(v->dim);
@@ -181,9 +181,8 @@ void vector_free(vector_t *v)
   free(v);
 }
 
-// ******************************************
+//////////////////////////////////////////////
 // HELP FUNCTIONS
-// ******************************************
 uint8_t matrix_check_row(matrix_t *m, uint8_t row)
 {
   return (m->rows > row);
@@ -204,9 +203,8 @@ uint8_t vector_check_dim(vector_t *v, uint8_t dim)
   return (v->dim > dim);
 }
 
-// ******************************************
+//////////////////////////////////////////////
 // MATRIX EQUALITY
-// ******************************************
 uint8_t vector_eq_dim(vector_t *v1, vector_t *v2)
 {
   return (v1->dim == v2->dim);
@@ -252,9 +250,8 @@ uint8_t matrix_eq(matrix_t *m1, matrix_t *m2, double tolerance)
   return 1;
 }
 
-// ******************************************
+//////////////////////////////////////////////
 // MATRIX PRINTING
-// ******************************************
 void matrix_print(matrix_t *m)
 {
   printf("Matrix \n");
@@ -285,12 +282,11 @@ void vector_print(vector_t *v)
   {
     printf("%.2f ", v->data[i]);
   }
+  printf("\n");
 }
 
-// *******************************************
+//////////////////////////////////////////////
 // Accessing and modifying matrix elements
-// *******************************************
-
 double vector_get_el(vector_t *v, uint8_t i)
 {
   if (!vector_check_dim(v, i))
@@ -305,7 +301,7 @@ double matrix_get_el(matrix_t *m, uint8_t i, uint8_t j)
 {
   if(!matrix_check_col(m, j) && !matrix_check_row(m, i))
   {
-    printf("matrix_get_el: Dimentions %d %d did not exists", i, j);
+    printf("matrix_get_el: Dimentions %d %d did not exists\n", i, j);
     return 0.0;
   }
   return m->data[i][j];
@@ -402,7 +398,7 @@ uint8_t matrix_diag_set_vector(matrix_t *m, vector_t *v)
   }
   if (m->cols != v->dim)
   {
-    printf("matrix_diag_set_vector: WRONG DIMENSIONS");
+    printf("matrix_diag_set_vector: WRONG DIMENSIONS\n");
     return 0;
   }
   for (uint8_t i = 0; i < v->dim; i++)
@@ -590,9 +586,8 @@ vector_t *vector_add_to_el(vector_t *v, uint8_t element, double value)
   return newm;
 }
 
-// *******************************************
+//////////////////////////////////////////////
 // Modifying the matrix structure
-// *******************************************
 matrix_t *matrix_rem_col(matrix_t *m, uint8_t col)
 {
   if (m == NULL || m->cols <= col)
@@ -643,7 +638,7 @@ uint8_t matrix_col_swap_ip(matrix_t *m, uint8_t col1, uint8_t col2)
 {
   if (m == NULL || m->cols <= col1 || m->cols <= col2)
   {
-    printf("matrix_col_swap_ip: WRONG PARAMETERS");
+    printf("matrix_col_swap_ip: WRONG PARAMETERS\n");
     return 0;
   }
   double tmp;
@@ -690,6 +685,7 @@ matrix_t *matrix_row_swap(matrix_t *m, uint8_t row1, uint8_t row2)
   }
   return newm;
 }
+
 typedef unsigned int uint;
 typedef unsigned char uint8_t;
 uint8_t matrix_add_ip(matrix_t *m1, matrix_t *m2)
@@ -860,9 +856,8 @@ vector_t *vector_normalize(vector_t *v)
   return newm;
 }
 
-// *******************************************
+//////////////////////////////////////////////
 // Matrix invertion
-// *******************************************
 matrix_t *matrix_invert(matrix_t *m1)
 {
   if (m1 == NULL || !m1->is_square)
@@ -912,6 +907,7 @@ matrix_t *matrix_invert(matrix_t *m1)
   return newm;
 }
 
+//////////////////////////////////////////////
 //2026.8.4 two points in image to 6x6 matrix
 matrix_t *matrix_from_vectors(vector_t *u1,vector_t *u2)
 {
@@ -973,4 +969,131 @@ matrix_t *SolveB_from_Ax(matrix_t *A,vector_t *x) //Ab=x
                    delta;
 
   return newm;
+}
+
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <numeric>
+#include <algorithm>
+
+// Define structure to hold the Full Pivoting LU Decomposition result
+struct FullPivLU {
+    std::vector<std::vector<double>> L;
+    std::vector<std::vector<double>> U;
+    std::vector<int> P; // Row permutations
+    std::vector<int> Q; // Column permutations
+    bool isSingular;
+};
+
+//use Full Pivoting (LUPQ) decomposition (P A Q = L U)
+FullPivLU computeFullPivLU(const std::vector<std::vector<double>>& A, double epsilon = 1e-12) {
+    int n = A.size();
+    std::vector<std::vector<double>> LU = A;
+    std::vector<int> P(n), Q(n);
+    
+    // Initialize permutation vectors
+    std::iota(P.begin(), P.end(), 0);
+    std::iota(Q.begin(), Q.end(), 0);
+    printf("P=%3d,%3d,%3d\n",P[0],P[1],P[2]);
+    printf("Q=%3d,%3d,%3d\n",Q[0],Q[1],Q[2]);
+    
+    bool singularFlag = false;
+
+    for (int k = 0; k < n; ++k) {
+        // Step 1: Find the absolute maximum element in the remaining sub-matrix (Full Pivoting)
+        double maxVal = 0.0;
+        int pivotRow = k;
+        int pivotCol = k;
+        
+        for (int i = k; i < n; ++i) {
+            for (int j = k; j < n; ++j) {
+                if (std::abs(LU[i][j]) > maxVal) {
+                    maxVal = std::abs(LU[i][j]);
+                    pivotRow = i;
+                    pivotCol = j;
+                }
+            }
+        }
+
+        // Step 2: Check for singularity
+        if (maxVal < epsilon) {
+            singularFlag = true;
+            // The rest of the matrix diagonal under U is structurally zero.
+            // We zero them out to prevent tiny precision noise from lingering.
+            for (int i = k; i < n; ++i) {
+                LU[i][i] = 0.0;
+            }
+            break; 
+        }
+
+        // Step 3: Swap Rows in LU and tracking vector P
+        if (pivotRow != k) {
+            std::swap(LU[k], LU[pivotRow]);
+            std::swap(P[k], P[pivotRow]);
+        }
+
+        // Step 4: Swap Columns in LU and tracking vector Q
+        if (pivotCol != k) {
+            for (int i = 0; i < n; ++i) {
+                std::swap(LU[i][k], LU[i][pivotCol]);
+            }
+            std::swap(Q[k], Q[pivotCol]);
+        }
+
+        // Step 5: Perform standard Gaussian elimination updates
+        for (int i = k + 1; i < n; ++i) {
+            LU[i][k] /= LU[k][k]; // Multiplier safely processed
+            for (int j = k + 1; j < n; ++j) {
+                LU[i][j] -= LU[i][k] * LU[k][j];
+            }
+        }
+    }
+
+    // Step 6: Separate the combined matrix into distinct L and U structures
+    std::vector<std::vector<double>> L(n, std::vector<double>(n, 0.0));
+    std::vector<std::vector<double>> U(n, std::vector<double>(n, 0.0));
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            if (i > j) {
+                L[i][j] = LU[i][j];
+            } else if (i == j) {
+                L[i][j] = 1.0; // L is unit lower triangular
+                U[i][j] = LU[i][j];
+            } else {
+                U[i][j] = LU[i][j];
+            }
+        }
+    }
+    printf("P=%3d,%3d,%3d\n",P[0],P[1],P[2]);
+    printf("Q=%3d,%3d,%3d\n",Q[0],Q[1],Q[2]);
+    return {L, U, P, Q, singularFlag};
+}
+
+void printMatrix(const std::string& name, const std::vector<std::vector<double>>& M) {
+    std::cout << "--- Matrix " << name << " ---\n";
+    for (const auto& row : M) {
+        for (double val : row) {
+            std::cout << (std::abs(val) < 1e-9 ? 0.0 : val) << "\t";
+        }
+        std::cout << "\n";
+    }
+}
+
+int lr_main() {
+    // A classic 3x3 singular matrix example (Row 3 = Row 1 + Row 2)
+    std::vector<std::vector<double>> A = {
+        {5.0, 7.0, 9.0},
+        {1.0, 2.0, 3.0},
+        {4.0, 5.0, 6.0}
+    };
+
+    FullPivLU result = computeFullPivLU(A);
+
+    printMatrix("L", result.L);
+    printMatrix("U", result.U);
+   
+    std::cout << "Is Singular: " << (result.isSingular ? "YES" : "NO") << "\n";
+    return 0;
 }

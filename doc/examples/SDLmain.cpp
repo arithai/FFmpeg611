@@ -476,12 +476,18 @@ int sdl_main(int argc, char* argv[]) {
 
   vector_t *u1=(vector_t *)ivector_new(pt[nowpicID][0].x,pt[nowpicID][0].y);
   vector_t *u2=(vector_t *)ivector_new(pt[nowpicID][1].x,pt[nowpicID][1].y);
-  vector_t *xv1=(vector_t *)ivector6_new(0,0,0.3,0,0,0.8);
+  vector_t *xv1=(vector_t *)ivector6_new(0,0.1,0.3,0.2,0,0.8);
   matrix_t *A=(matrix_t *)matrix_from_vectors(u1,u2);
   matrix_t *b=(matrix_t *)SolveB_from_Ax(A,xv1);
   vector_t *u3=(vector_t *)ivector_new(pt[nowpicID][2].x,pt[nowpicID][2].y);
   vector_t *xv3=(vector_t *)matrix_mult_vector(b, u3);
   vector_print(xv3);
+  vector_t *xv4=(vector_t *)matrix_mult_vector(b, u1);
+  vector_print(xv4);
+  vector_t *xv5=(vector_t *)matrix_mult_vector(b, u2);
+  vector_print(xv5);
+  printf("=================\n");
+  lr_main();
 
             }
             else if(e.key.keysym.sym=='z') {

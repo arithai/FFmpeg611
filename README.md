@@ -1,6 +1,24 @@
 FFmpeg README
 =============
 
+2026/08/06 Add svd from
+//              Copyright Manolis Lourakis 2024.
+// Distributed under the Boost Software License, Version 1.0.
+//    (See copy at https://www.boost.org/LICENSE_1_0.txt)
+
+/* Fast SVD for 3x3 matrices based on the polar and eigen decompositions:
+ * if A=Q*H and H=V*S*V', then an SVD is (Q*V)*S*V' \equiv U*S*V'
+ *
+ * See https://nhigham.com/2020/07/28/what-is-the-polar-decomposition/comment-page-1/
+ * https://github.com/martinbis11/polar-decomposition-3x3/tree/master
+ * and https://www.geometrictools.com/Documentation/RobustEigenSymmetric3x3.pdf
+ */
+
+Add matrix from
+https://github.com/timagr615/matrix/tree/master
+MIT License
+Copyright (c) 2022 timagr615
+
 FFmpeg is a collection of libraries and tools to process multimedia content
 such as audio, video, subtitles and related metadata.
 

@@ -111,5 +111,16 @@ vector_t *ivector3_new(double x1,double x2,double x3);
 vector_t *ivector6_new(double x1,double x2,double x3,
                        double x4,double x5,double x6);
 matrix_t *matrix_from_vectors(vector_t *u1,vector_t *u2);
+//  |u00 u01 0   0   0   0  | |b00|   |x00|
+//  |0   0   u00 u01 0   0  | |b01|   |x01|
+//  |0   0   0   0   u00 u01| |b10| = |x02|
+//  |u10 u11 0   0   0   0  | |b11|   |x10|
+//  |0   0   u10 u11 0   0  | |b20|   |x11|
+//  |0   0   0   0   u10 u11| |b21|   |x12|
 matrix_t *SolveB_from_Ax(matrix_t *A,vector_t *x); //Ab=x
+//    |b00 b01|
+//  b=|b10 b11|
+//    |b20 b21|
 
+//Algebraic Projective Geometry
+int lr_main();
