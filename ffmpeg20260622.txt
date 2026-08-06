@@ -11,6 +11,7 @@ Use the -std=c99 flag or later to ensure wide character support:
 ./dfvmux3diff.exe ./VID20250724102442.mp4 ./VID20250724102442_r2.mp4
 make -fMakefile.act dfv2
 cp dfvmux3diff.exe exe
+./dfvmux3diff.exe ./VID20260801091231.mp4 ./VID20260801091231_r2.mp4
 $ ./dfvmux3diff.exe ./VID20250724102442.mp4 ./VID20250724102442_r2.mp4
 verstr=arithai.com ?????V260722.02
 

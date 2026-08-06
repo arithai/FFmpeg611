@@ -1,6 +1,5 @@
 #include <math.h>
 #include "matrix.h"
-
 vector_t *vector_new(uint8_t dim)
 {
   if (dim == 0)
@@ -8,13 +7,11 @@ vector_t *vector_new(uint8_t dim)
     printf("Wrong number of dimensions\n\r");
     return NULL;
   }
-
   vector_t *v = (vector_t *)calloc(1, sizeof(*v));
   v->dim = dim;
   v->data = (double*)calloc(v->dim, sizeof(*v->data));
   return v;
 }
-
 vector_t *ivector_new(double u1,double u2)
 {
   vector_t *v = (vector_t *)calloc(1, sizeof(*v));
@@ -23,7 +20,6 @@ vector_t *ivector_new(double u1,double u2)
   v->data[0]=u1; v->data[1]=u2;
   return v;
 }
-
 vector_t *ivector6_new(double x1,double x2,double x3,
                        double x4,double x5,double x6) 
 {
@@ -34,7 +30,6 @@ vector_t *ivector6_new(double x1,double x2,double x3,
   v->data[3]=x4; v->data[4]=x5; v->data[5]=x6;
   return v;
 }
-
 vector_t *ivector3_new(double x1,double x2,double x3) 
 {
   vector_t *v = (vector_t *)calloc(1, sizeof(*v));
@@ -43,7 +38,6 @@ vector_t *ivector3_new(double x1,double x2,double x3)
   v->data[0]=x1; v->data[1]=x2; v->data[2]=x3;
   return v;
 }
-
 matrix_t *matrix_new(uint8_t rows, uint8_t cols)
 {
   if (cols == 0 || rows == 0)
@@ -51,20 +45,17 @@ matrix_t *matrix_new(uint8_t rows, uint8_t cols)
     printf("Invalid Parameters od Matrix\n\r");
     return NULL;
   }
-
   matrix_t *m = (matrix_t *)calloc(1, sizeof(*m));
   m->cols = cols;
   m->rows = rows;
   m->is_square = (cols == rows) ? 1 : 0;
   m->data = (double**) calloc(m->rows, sizeof(*m->data));
-
   for (uint8_t i = 0; i < m->rows; ++i)
   {
     m->data[i] = (double*)calloc(m->cols, sizeof(**m->data));
   }
   return m;
 }
-
 vector_t *vector_copy(vector_t *v)
 {
   if (v == NULL)
@@ -88,13 +79,11 @@ vector_t *vector_eye(uint8_t dim)
   }
   return newm;
 }
-
 matrix_t *matrix_sqr_zero(uint8_t size)
 {
   matrix_t *m = matrix_new(size, size);
   return m; 
 }
-
 matrix_t *matrix_eye(uint8_t size)
 {
   matrix_t *m = matrix_new(size, size);
@@ -104,7 +93,6 @@ matrix_t *matrix_eye(uint8_t size)
   }
   return m;
 }
-
 matrix_t *matrix_copy(matrix_t *m)
 {
   matrix_t *newm = matrix_new(m->rows, m->cols);
@@ -117,7 +105,15 @@ matrix_t *matrix_copy(matrix_t *m)
   }
   return newm;
 }
-
+void matrix_copy3x3(matrix_t *m,double A3x3[3][3]) {
+  for (uint8_t i = 0; i < 3; i++)
+  {
+    for (uint8_t j = 0; j < 3; j++)
+    {
+      m->data[i][j] = A3x3[i][j];
+    }
+  }
+}
 matrix_t *matrix_from_arr(uint8_t rows, uint8_t cols, uint8_t dim, double *values)
 {
   if (rows*cols != dim)
@@ -129,7 +125,6 @@ matrix_t *matrix_from_arr(uint8_t rows, uint8_t cols, uint8_t dim, double *value
   matrix_t *newm = matrix_from_vec(rows, cols, v);
   return newm;
 }
-
 matrix_t *matrix_from_vec(uint8_t rows, uint8_t cols, vector_t *v)
 {
   matrix_t *m = matrix_new(rows, cols);
@@ -144,7 +139,6 @@ matrix_t *matrix_from_vec(uint8_t rows, uint8_t cols, vector_t *v)
   }
   return m;
 }
-
 vector_t *vector_from_arr(uint8_t dim, double *values)
 {
   vector_t *v = vector_new(dim);
@@ -154,7 +148,6 @@ vector_t *vector_from_arr(uint8_t dim, double *values)
   }
   return v;
 }
-
 void matrix_free(matrix_t *m)
 {   
   if (m == NULL)
@@ -169,7 +162,6 @@ void matrix_free(matrix_t *m)
   free(m->data);
   free(m);
 }
-
 void vector_free(vector_t *v)
 {
   if (v == NULL)
@@ -180,41 +172,34 @@ void vector_free(vector_t *v)
   free(v->data);
   free(v);
 }
-
 //////////////////////////////////////////////
 // HELP FUNCTIONS
 uint8_t matrix_check_row(matrix_t *m, uint8_t row)
 {
   return (m->rows > row);
 }
-
 uint8_t matrix_check_col(matrix_t *m, uint8_t col)
 {
   return (m->cols > col);
 }
-
 uint8_t matrix_check_dim(matrix_t *m, uint8_t row, uint8_t col)
 {
   return matrix_check_col(m, col) && matrix_check_row(m, row);
 }
-
 uint8_t vector_check_dim(vector_t *v, uint8_t dim)
 {
   return (v->dim > dim);
 }
-
 //////////////////////////////////////////////
 // MATRIX EQUALITY
 uint8_t vector_eq_dim(vector_t *v1, vector_t *v2)
 {
   return (v1->dim == v2->dim);
 }
-
 uint8_t matrix_eq_dim(matrix_t *m1, matrix_t *m2)
 {
   return (m1->cols == m2->cols) && (m1->rows == m2->rows);
 }
-
 uint8_t vector_eq(vector_t *v1, vector_t *v2, double tolerance)
 {
   if (!vector_eq_dim(v1, v2))
@@ -230,7 +215,6 @@ uint8_t vector_eq(vector_t *v1, vector_t *v2, double tolerance)
   }
   return 1;
 }
-
 uint8_t matrix_eq(matrix_t *m1, matrix_t *m2, double tolerance)
 {
   if(!matrix_eq_dim(m1, m2))
@@ -249,7 +233,6 @@ uint8_t matrix_eq(matrix_t *m1, matrix_t *m2, double tolerance)
   }
   return 1;
 }
-
 //////////////////////////////////////////////
 // MATRIX PRINTING
 void matrix_print(matrix_t *m)
@@ -269,7 +252,6 @@ void matrix_print(matrix_t *m)
     printf("\n");
   }
 }
-
 void vector_print(vector_t *v)
 {
   printf("Vector: \n");
@@ -284,7 +266,6 @@ void vector_print(vector_t *v)
   }
   printf("\n");
 }
-
 //////////////////////////////////////////////
 // Accessing and modifying matrix elements
 double vector_get_el(vector_t *v, uint8_t i)
@@ -296,7 +277,6 @@ double vector_get_el(vector_t *v, uint8_t i)
   }
   return v->data[i];
 }
-
 double matrix_get_el(matrix_t *m, uint8_t i, uint8_t j)
 {
   if(!matrix_check_col(m, j) && !matrix_check_row(m, i))
@@ -306,7 +286,6 @@ double matrix_get_el(matrix_t *m, uint8_t i, uint8_t j)
   }
   return m->data[i][j];
 }
-
 vector_t *matrix_get_col(matrix_t *m, uint8_t col)
 {
   if (!matrix_check_col(m, col))
@@ -335,7 +314,6 @@ vector_t *matrix_get_row(matrix_t *m, uint8_t row)
   }
   return v;
 }
-
 uint8_t vector_set_el(vector_t *v, uint8_t i, double value)
 {
   if (v == NULL || !vector_check_dim(v, i))
@@ -345,7 +323,6 @@ uint8_t vector_set_el(vector_t *v, uint8_t i, double value)
   v->data[i] = value;
   return 1;
 }
-
 uint8_t matrix_set_el(matrix_t *m, uint8_t i, uint8_t j, double value)
 {
   if (m == NULL || !matrix_check_dim(m, i, j))
@@ -356,7 +333,6 @@ uint8_t matrix_set_el(matrix_t *m, uint8_t i, uint8_t j, double value)
   m->data[i][j] = value;
   return 1;
 }
-
 uint8_t matrix_set_all(matrix_t *m, double value)
 {
   if (m == NULL)
@@ -374,7 +350,6 @@ uint8_t matrix_set_all(matrix_t *m, double value)
   }
   return 1;
 }
-
 uint8_t matrix_diag_set(matrix_t *m, double value)
 {
   if (m == NULL || !m->is_square)
@@ -388,7 +363,6 @@ uint8_t matrix_diag_set(matrix_t *m, double value)
   }
   return 1;
 }
-
 uint8_t matrix_diag_set_vector(matrix_t *m, vector_t *v)
 {
   if (m == NULL || v == NULL || !m->is_square )
@@ -407,7 +381,6 @@ uint8_t matrix_diag_set_vector(matrix_t *m, vector_t *v)
   }
   return 1;
 }
-
 vector_t *matrix_mult_vector(matrix_t *m, vector_t *v)
 {
   if(m == NULL || v == NULL)
@@ -420,7 +393,6 @@ vector_t *matrix_mult_vector(matrix_t *m, vector_t *v)
     printf("matrix_mult_by_vector: WRONG DIMENSIONS\n");
     return NULL;
   }
-
   vector_t *newm = vector_new(m->rows);
   for (uint8_t i = 0; i < m->rows; i++)
   {
@@ -433,7 +405,6 @@ vector_t *matrix_mult_vector(matrix_t *m, vector_t *v)
   }
   return newm;
 }
-
 uint8_t matrix_mult_scalar_ip(matrix_t *m, double value)
 {
   if (m == NULL)
@@ -450,7 +421,6 @@ uint8_t matrix_mult_scalar_ip(matrix_t *m, double value)
   }
   return 1;
 }
-
 matrix_t *matrix_mult_scalar(matrix_t *m, double value)
 {
   matrix_t *newm = matrix_copy(m);
@@ -461,7 +431,6 @@ matrix_t *matrix_mult_scalar(matrix_t *m, double value)
   }
   return newm;
 }
-
 uint8_t matrix_mult_row_ip(matrix_t *m, uint8_t row, double value)
 {
   if (m == NULL || m->rows <= row)
@@ -475,7 +444,6 @@ uint8_t matrix_mult_row_ip(matrix_t *m, uint8_t row, double value)
   }
   return 1;
 }
-
 matrix_t *matrix_mult_row(matrix_t *m, uint8_t row, double value)
 {
   matrix_t *newm = matrix_copy(m);
@@ -488,7 +456,6 @@ matrix_t *matrix_mult_row(matrix_t *m, uint8_t row, double value)
 #endif    
   return newm;
 }
-
 uint8_t matrix_mult_col_ip(matrix_t *m, uint8_t col, double value)
 {
   if (m == NULL || m->cols <= col)
@@ -502,7 +469,6 @@ uint8_t matrix_mult_col_ip(matrix_t *m, uint8_t col, double value)
   }
   return 1;
 }
-
 matrix_t *matrix_mult_col(matrix_t *m, uint8_t col, double value)
 {
   matrix_t *newm = matrix_copy(m);
@@ -513,7 +479,6 @@ matrix_t *matrix_mult_col(matrix_t *m, uint8_t col, double value)
   }
   return newm;
 }
-
 uint8_t matrix_add_row_ip(matrix_t *m, uint8_t where, uint8_t row, double multiplier)
 {
   if (m == NULL || m->rows <= where || m->rows <= row)
@@ -527,7 +492,6 @@ uint8_t matrix_add_row_ip(matrix_t *m, uint8_t where, uint8_t row, double multip
   }
   return 1;
 }
-
 matrix_t *matrix_add_row(matrix_t *m, uint8_t where, uint8_t row, double multiplier)
 {
   matrix_t *newm = matrix_copy(m);
@@ -538,7 +502,6 @@ matrix_t *matrix_add_row(matrix_t *m, uint8_t where, uint8_t row, double multipl
   }
   return newm;
 }
-
 uint8_t vector_mult_scalar_ip(vector_t *v, double value, double add)
 {
   if (v == NULL)
@@ -552,7 +515,6 @@ uint8_t vector_mult_scalar_ip(vector_t *v, double value, double add)
   }
   return 1;
 }
-
 vector_t *vector_mult_scalar(vector_t *v, double value, double add)
 {
   vector_t *newm = vector_copy(v);
@@ -563,7 +525,6 @@ vector_t *vector_mult_scalar(vector_t *v, double value, double add)
   }
   return newm;
 }
-
 uint8_t vector_add_to_el_ip(vector_t *v, uint8_t element, double value)
 {
   if (v == NULL || !vector_check_dim(v, element))
@@ -574,7 +535,6 @@ uint8_t vector_add_to_el_ip(vector_t *v, uint8_t element, double value)
   v->data[element] += value;
   return 1;
 }
-
 vector_t *vector_add_to_el(vector_t *v, uint8_t element, double value)
 {
   vector_t *newm = vector_copy(v);
@@ -585,7 +545,6 @@ vector_t *vector_add_to_el(vector_t *v, uint8_t element, double value)
   }
   return newm;
 }
-
 //////////////////////////////////////////////
 // Modifying the matrix structure
 matrix_t *matrix_rem_col(matrix_t *m, uint8_t col)
@@ -610,7 +569,6 @@ matrix_t *matrix_rem_col(matrix_t *m, uint8_t col)
   }
   return newm;
 }
-
 matrix_t *matrix_rem_row(matrix_t *m, uint8_t row)
 {
   if (m == NULL || m->rows <= row)
@@ -633,7 +591,6 @@ matrix_t *matrix_rem_row(matrix_t *m, uint8_t row)
   }
   return newm;
 }
-
 uint8_t matrix_col_swap_ip(matrix_t *m, uint8_t col1, uint8_t col2)
 {
   if (m == NULL || m->cols <= col1 || m->cols <= col2)
@@ -650,7 +607,6 @@ uint8_t matrix_col_swap_ip(matrix_t *m, uint8_t col1, uint8_t col2)
   }
   return 1;
 }
-
 matrix_t *matrix_col_swap(matrix_t *m, uint8_t col1, uint8_t col2)
 {
   matrix_t *newm = matrix_copy(m);
@@ -661,7 +617,6 @@ matrix_t *matrix_col_swap(matrix_t *m, uint8_t col1, uint8_t col2)
   }
   return newm;
 }
-
 uint8_t matrix_row_swap_ip(matrix_t *m, uint8_t row1, uint8_t row2)
 {
   if (m == NULL || m->rows <= row1 || m->rows <= row2)
@@ -674,7 +629,6 @@ uint8_t matrix_row_swap_ip(matrix_t *m, uint8_t row1, uint8_t row2)
   m->data[row2] = tmp;
   return 1;
 }
-
 matrix_t *matrix_row_swap(matrix_t *m, uint8_t row1, uint8_t row2)
 {
   matrix_t *newm = matrix_copy(m);
@@ -685,7 +639,6 @@ matrix_t *matrix_row_swap(matrix_t *m, uint8_t row1, uint8_t row2)
   }
   return newm;
 }
-
 typedef unsigned int uint;
 typedef unsigned char uint8_t;
 uint8_t matrix_add_ip(matrix_t *m1, matrix_t *m2)
@@ -705,7 +658,6 @@ uint8_t matrix_add_ip(matrix_t *m1, matrix_t *m2)
   }
   return 1;
 }
-
 matrix_t *matrix_add(matrix_t *m1, matrix_t *m2)
 {
   matrix_t *newm = matrix_copy(m1);
@@ -716,7 +668,6 @@ matrix_t *matrix_add(matrix_t *m1, matrix_t *m2)
   }
   return newm;
 }
-
 uint8_t matrix_sub_ip(matrix_t *m1, matrix_t *m2)
 {
   if (m1 == NULL || m2 == NULL || !matrix_eq_dim(m1, m2))
@@ -735,7 +686,6 @@ uint8_t matrix_sub_ip(matrix_t *m1, matrix_t *m2)
   }
   return 0;
 }
-
 matrix_t *matrix_sub(matrix_t *m1, matrix_t *m2)
 {
   matrix_t *newm = matrix_copy(m1);
@@ -746,7 +696,6 @@ matrix_t *matrix_sub(matrix_t *m1, matrix_t *m2)
   }
   return newm;
 }
-
 matrix_t *matrix_dot(matrix_t *m1, matrix_t *m2)
 {
   if (m1 == NULL || m2 == NULL || m1->cols != m2->rows)
@@ -768,7 +717,6 @@ matrix_t *matrix_dot(matrix_t *m1, matrix_t *m2)
   }
   return newm;
 }
-
 matrix_t *matrix_transpose(matrix_t *m)
 {
   if (m == NULL)
@@ -787,7 +735,6 @@ matrix_t *matrix_transpose(matrix_t *m)
   }
   return newm;
 }
-
 double matrix_trace(matrix_t *m)
 {
   if (m == NULL || !m->is_square)
@@ -802,7 +749,6 @@ double matrix_trace(matrix_t *m)
   }
   return trace;
 }
-
 double vector_scalar_dot(vector_t *v1, vector_t *v2)
 {
   if (v1 == NULL || v2 == NULL || v1->dim != v2->dim)
@@ -817,19 +763,16 @@ double vector_scalar_dot(vector_t *v1, vector_t *v2)
   }
   return result;
 }
-
 double vector_norm2(vector_t *v)
 {
   double result = vector_scalar_dot(v, v);
   return result;
 }
-
 double vector_norm(vector_t *v)
 {
   double result = sqrt(vector_norm2(v));
   return result;
 }
-
 uint8_t vector_normalize_ip(vector_t *v)
 {
   double norm = vector_norm(v);
@@ -844,7 +787,6 @@ uint8_t vector_normalize_ip(vector_t *v)
   }
   return 1;
 }
-
 vector_t *vector_normalize(vector_t *v)
 {
   vector_t *newm = vector_copy(v);
@@ -855,7 +797,6 @@ vector_t *vector_normalize(vector_t *v)
   }
   return newm;
 }
-
 //////////////////////////////////////////////
 // Matrix invertion
 matrix_t *matrix_invert(matrix_t *m1)
@@ -865,10 +806,8 @@ matrix_t *matrix_invert(matrix_t *m1)
     printf("matrix_invert: WRONG MATRIX\n");
     return NULL;
   }
-    
   matrix_t *m = matrix_copy(m1);
   matrix_t *newm = matrix_eye(m->rows);
-    
   for (uint8_t i = 0; i < m->rows; ++i)
   {
     if (m->data[i][i] == 0.0)
@@ -892,7 +831,6 @@ matrix_t *matrix_invert(matrix_t *m1)
     double scalar = 1.0/m->data[i][i];
     matrix_mult_row_ip(m, i, scalar);
     matrix_mult_row_ip(newm, i, scalar);
-
     for (uint8_t j = 0; j < m->rows; ++j)
     {
       if (i==j) {
@@ -906,7 +844,6 @@ matrix_t *matrix_invert(matrix_t *m1)
   matrix_free(m);
   return newm;
 }
-
 //////////////////////////////////////////////
 //2026.8.4 two points in image to 6x6 matrix
 matrix_t *matrix_from_vectors(vector_t *u1,vector_t *u2)
@@ -938,7 +875,6 @@ matrix_t *matrix_from_vectors(vector_t *u1,vector_t *u2)
   newm->data[5][5]=u2->data[1];
   return newm;
 }
-
 matrix_t *SolveB_from_Ax(matrix_t *A,vector_t *x) //Ab=x
 {
   if (A == NULL || x == NULL || A->rows!=6 || A->cols!=6
@@ -957,26 +893,38 @@ matrix_t *SolveB_from_Ax(matrix_t *A,vector_t *x) //Ab=x
                    delta;
   newm->data[0][1]=(x->data[3]*A->data[0][0]-x->data[0]*A->data[3][0])/
                    delta;
-
   newm->data[1][0]=(x->data[1]*A->data[3][1]-x->data[4]*A->data[0][1])/
                    delta;
   newm->data[1][1]=(x->data[4]*A->data[0][0]-x->data[1]*A->data[3][0])/
                    delta;
-
   newm->data[2][0]=(x->data[2]*A->data[3][1]-x->data[5]*A->data[0][1])/
                    delta;
   newm->data[2][1]=(x->data[5]*A->data[0][0]-x->data[2]*A->data[3][0])/
                    delta;
-
   return newm;
 }
-
+matrix_t *matrix_from_row_perm(int D[3]) {
+  matrix_t *newm = matrix_new(3, 3);
+  int i;
+  for (i=0;i<3;i++) {
+    newm->data[D[i]][i]=1;
+  }
+  return newm;
+}
+matrix_t *matrix_from_col_perm(int D[3]) {
+  matrix_t *newm = matrix_new(3, 3);
+  int i;
+  for (i=0;i<3;i++) {
+    newm->data[i][D[i]]=1;
+  }
+  return newm;
+}
+#if 0
 #include <iostream>
 #include <vector>
 #include <cmath>
 #include <numeric>
 #include <algorithm>
-
 // Define structure to hold the Full Pivoting LU Decomposition result
 struct FullPivLU {
     std::vector<std::vector<double>> L;
@@ -985,115 +933,114 @@ struct FullPivLU {
     std::vector<int> Q; // Column permutations
     bool isSingular;
 };
-
+#endif
 //use Full Pivoting (LUPQ) decomposition (P A Q = L U)
-FullPivLU computeFullPivLU(const std::vector<std::vector<double>>& A, double epsilon = 1e-12) {
-    int n = A.size();
-    std::vector<std::vector<double>> LU = A;
-    std::vector<int> P(n), Q(n);
-    
-    // Initialize permutation vectors
-    std::iota(P.begin(), P.end(), 0);
-    std::iota(Q.begin(), Q.end(), 0);
-    printf("P=%3d,%3d,%3d\n",P[0],P[1],P[2]);
-    printf("Q=%3d,%3d,%3d\n",Q[0],Q[1],Q[2]);
-    
-    bool singularFlag = false;
-
-    for (int k = 0; k < n; ++k) {
-        // Step 1: Find the absolute maximum element in the remaining sub-matrix (Full Pivoting)
-        double maxVal = 0.0;
-        int pivotRow = k;
-        int pivotCol = k;
-        
-        for (int i = k; i < n; ++i) {
-            for (int j = k; j < n; ++j) {
-                if (std::abs(LU[i][j]) > maxVal) {
-                    maxVal = std::abs(LU[i][j]);
-                    pivotRow = i;
-                    pivotCol = j;
-                }
-            }
+//BLUE B:before E:End
+bool computeFullPivLU(
+  const matrix_t *A, matrix_t *L,matrix_t *U,
+  int *B,int *E, double epsilon = 1e-12) {
+  int n = A->rows; //=A=cols=3
+  int tmp;
+  matrix_t *LU = matrix_copy((matrix_t *)A);   
+// Initialize permutation vectors
+  for(int i=0;i<n;i++) {
+    B[i]=i;E[i]=i;
+  }
+  printf("n=%d\n",n);
+//printf("B=%3d,%3d,%3d\n",B[0],B[1],B[2]);
+//printf("E=%3d,%3d,%3d\n",E[0],E[1],E[2]);
+  bool singularFlag = false;
+  for (int k = 0; k < n; ++k) {
+//Step 1: Find the absolute maximum element in the remaining sub-matrix (Full Pivoting)
+    double maxVal = 0.0;
+    int pivotRow = k;
+    int pivotCol = k;        
+    for (int i = k; i < n; ++i) {
+      for (int j = k; j < n; ++j) {
+        if (fabs(LU->data[i][j]) > maxVal) {
+          maxVal = fabs(LU->data[i][j]);
+          pivotRow = i;
+          pivotCol = j;
         }
-
-        // Step 2: Check for singularity
-        if (maxVal < epsilon) {
-            singularFlag = true;
-            // The rest of the matrix diagonal under U is structurally zero.
-            // We zero them out to prevent tiny precision noise from lingering.
-            for (int i = k; i < n; ++i) {
-                LU[i][i] = 0.0;
-            }
-            break; 
-        }
-
-        // Step 3: Swap Rows in LU and tracking vector P
-        if (pivotRow != k) {
-            std::swap(LU[k], LU[pivotRow]);
-            std::swap(P[k], P[pivotRow]);
-        }
-
-        // Step 4: Swap Columns in LU and tracking vector Q
-        if (pivotCol != k) {
-            for (int i = 0; i < n; ++i) {
-                std::swap(LU[i][k], LU[i][pivotCol]);
-            }
-            std::swap(Q[k], Q[pivotCol]);
-        }
-
-        // Step 5: Perform standard Gaussian elimination updates
-        for (int i = k + 1; i < n; ++i) {
-            LU[i][k] /= LU[k][k]; // Multiplier safely processed
-            for (int j = k + 1; j < n; ++j) {
-                LU[i][j] -= LU[i][k] * LU[k][j];
-            }
-        }
+      }
     }
-
-    // Step 6: Separate the combined matrix into distinct L and U structures
-    std::vector<std::vector<double>> L(n, std::vector<double>(n, 0.0));
-    std::vector<std::vector<double>> U(n, std::vector<double>(n, 0.0));
-
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (i > j) {
-                L[i][j] = LU[i][j];
-            } else if (i == j) {
-                L[i][j] = 1.0; // L is unit lower triangular
-                U[i][j] = LU[i][j];
-            } else {
-                U[i][j] = LU[i][j];
-            }
-        }
+//Step 2: Check for singularity
+    if (maxVal < epsilon) {
+      singularFlag = true;
+      //The rest of the matrix diagonal under U is structurally zero.
+      //We zero them out to prevent tiny precision noise from lingering.
+      for (int i = k; i < n; ++i) {
+        LU->data[i][i] = 0.0;
+      }
+      break; 
     }
-    printf("P=%3d,%3d,%3d\n",P[0],P[1],P[2]);
-    printf("Q=%3d,%3d,%3d\n",Q[0],Q[1],Q[2]);
-    return {L, U, P, Q, singularFlag};
+//Step 3: Swap Rows in LU and tracking vector P
+    if (pivotRow != k) {
+      tmp = matrix_row_swap_ip(LU, k, pivotRow);
+//    printf("LU (%d,%d) %d ",k , pivotRow, result);
+//    matrix_print(LU);
+      tmp=B[k];B[k]=B[pivotRow];B[pivotRow]=tmp;
+    }
+//Step 4: Swap Columns in LU and tracking vector Q
+    if (pivotCol != k) {
+      tmp=matrix_col_swap_ip(LU, k, pivotCol);
+      tmp=E[k];E[k]=E[pivotCol];E[pivotCol]=tmp;
+    }
+//Step 5: Perform standard Gaussian elimination updates
+    for (int i = k + 1; i < n; ++i) {
+      LU->data[i][k] /= LU->data[k][k]; // Multiplier safely processed
+      for (int j = k + 1; j < n; ++j) {
+        LU->data[i][j] -= LU->data[i][k] * LU->data[k][j];
+      }
+    }
+  }
+//Step 6: Separate the combined matrix into distinct L and U structures
+//std::vector<std::vector<double>> L(n, std::vector<double>(n, 0.0));
+//std::vector<std::vector<double>> U(n, std::vector<double>(n, 0.0));
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      if (i > j) {
+        L->data[i][j] = LU->data[i][j];
+      } else if (i == j) {
+        L->data[i][j] = 1.0; // L is unit lower triangular
+        U->data[i][j] = LU->data[i][j];
+      } else {
+        U->data[i][j] = LU->data[i][j];
+      }
+    }
+  }
+//printf("B=%3d,%3d,%3d\n",B[0],B[1],B[2]);
+//printf("E=%3d,%3d,%3d\n",E[0],E[1],E[2]);
+  return singularFlag;
 }
-
-void printMatrix(const std::string& name, const std::vector<std::vector<double>>& M) {
-    std::cout << "--- Matrix " << name << " ---\n";
-    for (const auto& row : M) {
-        for (double val : row) {
-            std::cout << (std::abs(val) < 1e-9 ? 0.0 : val) << "\t";
-        }
-        std::cout << "\n";
-    }
-}
-
 int lr_main() {
-    // A classic 3x3 singular matrix example (Row 3 = Row 1 + Row 2)
-    std::vector<std::vector<double>> A = {
-        {5.0, 7.0, 9.0},
-        {1.0, 2.0, 3.0},
-        {4.0, 5.0, 6.0}
+// A classic 3x3 singular matrix example (Row 3 = Row 1 + Row 2)
+  matrix_t *A=(matrix_t *)matrix_new(3, 3);
+  double A3x3[3][3] = {
+     {1.0, 2.0, 3.0},
+     {4.0, 5.0, 6.0},
+     {5.0, 7.0, 9.0}
     };
-
-    FullPivLU result = computeFullPivLU(A);
-
-    printMatrix("L", result.L);
-    printMatrix("U", result.U);
-   
-    std::cout << "Is Singular: " << (result.isSingular ? "YES" : "NO") << "\n";
-    return 0;
+  matrix_t *L=(matrix_t *)matrix_new(3, 3);
+  matrix_t *U=(matrix_t *)matrix_new(3, 3);
+  int B[3],E[3];
+  matrix_copy3x3(A,A3x3);
+  matrix_print(A);
+  bool isSingular = computeFullPivLU(A,L,U,B,E);
+  printf("L ");matrix_print(L);
+  printf("U ");matrix_print(U);
+  printf("B=%3d,%3d,%3d\n",B[0],B[1],B[2]);
+  printf("E=%3d,%3d,%3d\n",E[0],E[1],E[2]); 
+  printf("Is Singular: %s\n",isSingular ? "YES" : "NO");  
+  matrix_t *BB=(matrix_t *)matrix_from_row_perm(B);
+  matrix_t *EE=(matrix_t *)matrix_from_col_perm(E);
+//test
+  matrix_t *LxU=(matrix_t *)matrix_dot(L,U);
+//printf("LxU ");matrix_print(LxU);
+//printf("EE ");matrix_print(EE);
+  matrix_t *LxU1=(matrix_t *)matrix_dot(LxU,EE);
+//printf("LxU1 ");matrix_print(LxU1);
+  matrix_t *LxU2=(matrix_t *)matrix_dot(BB,LxU1);
+  printf("LxU2 ");matrix_print(LxU2);
+  return 0;
 }
