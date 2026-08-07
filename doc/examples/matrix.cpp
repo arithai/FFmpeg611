@@ -919,6 +919,66 @@ matrix_t *matrix_from_col_perm(int D[3]) {
   }
   return newm;
 }
+void row_perm_vector(int D[3],vector_t *v) { //B
+  double tmp[3];
+  tmp[0]=v->data[0];tmp[1]=v->data[1];tmp[2]=v->data[2];
+  v->data[0]=tmp[D[0]];
+  v->data[1]=tmp[D[1]];
+  v->data[2]=tmp[D[2]];
+  return;
+}
+void col_perm_vector(int D[3],vector_t *v) { //E
+  double tmp[3];
+  tmp[0]=v->data[0];tmp[1]=v->data[1];tmp[2]=v->data[2];
+  v->data[D[0]]=tmp[0];
+  v->data[D[1]]=tmp[1];
+  v->data[D[2]]=tmp[2];
+  return;
+}
+////////////////////////////////////////////////
+// |u00 u01 u02| |b0|  |v0|
+// |    u11 u12| |b1|= |v1|
+// |        u22| |b2|  |v2|
+void SolveB_from_Uv(matrix_t *U,vector_t *v) {
+  v->data[2]=v->data[2]/U->data[2][2];
+  v->data[1]=(v->data[1]-v->data[2]*U->data[1][2])/U->data[1][1];
+  v->data[0]=(v->data[0]-v->data[2]*U->data[0][2]-v->data[1]*U->data[0][1])/U->data[0][0];
+}
+////////////////////////////////////////////////
+// |  1   0  0| |b0|  |v0|
+// |l10   1  0| |b1|= |v1|
+// |l20 l21  1| |b2|  |v2|
+void SolveB_from_Lv(matrix_t *L,vector_t *v) {
+//v->data[0]=v->data[0];
+  v->data[1]=v->data[1]-v->data[0]*L->data[1][0];
+  v->data[2]=v->data[2]-v->data[0]*L->data[2][0]-v->data[1]*L->data[2][1];
+}
+matrix_t *computeBM_from_BLUE(matrix_t *L,matrix_t *U,int *B,int *E,
+  vector_t *v1,vector_t *v2,vector_t *v3) {
+  vector_t *v01=(vector_t *)ivector3_new(v1->data[0],v2->data[0],v3->data[0]); 
+  vector_t *v02=(vector_t *)ivector3_new(v1->data[1],v2->data[1],v3->data[1]); 
+  vector_t *v03=(vector_t *)ivector3_new(v1->data[2],v2->data[2],v3->data[2]); 
+  row_perm_vector(B,v01);
+  SolveB_from_Lv(L,v01);
+  SolveB_from_Uv(U,v01);
+  col_perm_vector(E,v01);
+
+  row_perm_vector(B,v02);
+  SolveB_from_Lv(L,v02);
+  SolveB_from_Uv(U,v02);
+  col_perm_vector(E,v02);
+
+  row_perm_vector(B,v03);
+  SolveB_from_Lv(L,v03);
+  SolveB_from_Uv(U,v03);
+  col_perm_vector(E,v03);
+
+  matrix_t *m=matrix_new(3,3);
+  m->data[0][0]=v01->data[0];m->data[0][1]=v01->data[1];m->data[0][2]=v01->data[2];
+  m->data[1][0]=v02->data[0];m->data[1][1]=v02->data[1];m->data[1][2]=v02->data[2];
+  m->data[2][0]=v03->data[0];m->data[2][1]=v03->data[1];m->data[2][2]=v03->data[2];
+  return m;
+}
 #if 0
 #include <iostream>
 #include <vector>
@@ -1013,13 +1073,32 @@ bool computeFullPivLU(
 //printf("E=%3d,%3d,%3d\n",E[0],E[1],E[2]);
   return singularFlag;
 }
+matrix_t *computeBM_from_UV(vector_t *u1,vector_t *u2,vector_t *u3,
+  vector_t *v1,vector_t *v2,vector_t *v3) {
+  double A3x3[3][3];
+  A3x3[0][0]=u1->data[0];A3x3[0][1]=u1->data[1];A3x3[0][2]=u1->data[2];
+  A3x3[1][0]=u2->data[0];A3x3[1][1]=u2->data[1];A3x3[1][2]=u2->data[2];
+  A3x3[2][0]=u3->data[0];A3x3[2][1]=u3->data[1];A3x3[2][2]=u3->data[2];
+  matrix_t *A=(matrix_t *)matrix_new(3, 3);
+  matrix_t *L=(matrix_t *)matrix_new(3, 3);
+  matrix_t *U=(matrix_t *)matrix_new(3, 3);
+  int B[3],E[3];
+  matrix_copy3x3(A,A3x3);
+  bool isSingular = computeFullPivLU(A,L,U,B,E);
+  if(!isSingular) {
+    return computeBM_from_BLUE(L,U,B,E,v1,v2,v3);
+  }
+  else {
+    return NULL;
+  }
+}
 int lr_main() {
 // A classic 3x3 singular matrix example (Row 3 = Row 1 + Row 2)
   matrix_t *A=(matrix_t *)matrix_new(3, 3);
   double A3x3[3][3] = {
-     {1.0, 2.0, 3.0},
-     {4.0, 5.0, 6.0},
-     {5.0, 7.0, 9.0}
+     {1.0, 2.0, 3.0}, //<== row vector 1
+     {4.0, 5.0, 6.0}, //<== row vector 2
+     {1.0, 7.0, 9.0}  //<== row vector 3
     };
   matrix_t *L=(matrix_t *)matrix_new(3, 3);
   matrix_t *U=(matrix_t *)matrix_new(3, 3);
@@ -1042,5 +1121,17 @@ int lr_main() {
 //printf("LxU1 ");matrix_print(LxU1);
   matrix_t *LxU2=(matrix_t *)matrix_dot(BB,LxU1);
   printf("LxU2 ");matrix_print(LxU2);
+  matrix_t *LxU3=matrix_invert(LxU2);
+  printf("LxU3 ");matrix_print(LxU3);
+
+  vector_t *u1=ivector3_new(4.0,5.0,6.0);  ////<== row vector 1
+
+  vector_t *v1=ivector3_new(  3,  6,1.0);  ////<== row vector 1
+  vector_t *v2=ivector3_new(  4,  5,0.3);  ////<== row vector 2
+  vector_t *v3=ivector3_new(  6,  1,0.2);  ////<== row vector 3
+  matrix_t *BM=computeBM_from_BLUE(L,U,B,E,v1,v2,v3);
+  printf("BM ");matrix_print(BM);
+  vector_t *va1=matrix_mult_vector(BM,u1);
+  printf("va1 ");vector_print(va1);
   return 0;
 }

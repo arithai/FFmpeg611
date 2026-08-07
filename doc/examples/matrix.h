@@ -121,6 +121,8 @@ matrix_t *SolveB_from_Ax(matrix_t *A,vector_t *x); //Ab=x
 //    |b00 b01|
 //  b=|b10 b11|
 //    |b20 b21|
+matrix_t *computeBM_from_UV(vector_t *u1,vector_t *u2,vector_t *u3,
+  vector_t *v1,vector_t *v2,vector_t *v3);
 
 //Algebraic Projective Geometry
 int lr_main();

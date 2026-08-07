@@ -27,6 +27,9 @@
 *.ptx.gz
 *_g
 act2.cpp
+act2.h
+matrix.cpp
+matrix.h
 Makefile.act
 \#*
 .\#*

@@ -31,6 +31,7 @@ bool isMouseOver(int mx, int my, const SDL_Rect& rect) {
 SDL_Point pt[3][20];
 
 SDL_Point ptClick;
+SDL_Point predictClick;
 int ptClickn=-1;
 int nPt[3];
 FILE *ptFile=NULL;
@@ -317,6 +318,7 @@ int sdl_main(int argc, char* argv[]) {
   for(i=0;i<NpicSN;i++) {
     printf("picSN[%4d]=%04d\n",i,picSN[i]);
   }
+  predictClick.x=-1;predictClick.y=-1;
 
   initPoint(0);
 //putPoint(0,7,7);
@@ -473,7 +475,7 @@ int sdl_main(int argc, char* argv[]) {
             int n;
             printf("<<%c>>\n",e.key.keysym.sym);
             if(e.key.keysym.sym=='a') {
-
+#if 0
   vector_t *u1=(vector_t *)ivector_new(pt[nowpicID][0].x,pt[nowpicID][0].y);
   vector_t *u2=(vector_t *)ivector_new(pt[nowpicID][1].x,pt[nowpicID][1].y);
   vector_t *xv1=(vector_t *)ivector6_new(0,0.1,0.3,0.2,0,0.8);
@@ -488,7 +490,26 @@ int sdl_main(int argc, char* argv[]) {
   vector_print(xv5);
   printf("=================\n");
   lr_main();
-
+#endif
+//u1->v1 u2->v2 u3->v3
+  vector_t *u1=ivector3_new(pt[0][0].x,pt[0][0].y,1.0);
+  vector_t *u2=ivector3_new(pt[0][1].x,pt[0][1].y,1.0);
+  vector_t *u3=ivector3_new(pt[0][2].x,pt[0][2].y,1.0);
+  vector_t *v1=ivector3_new(pt[1][0].x,pt[1][0].y,1.0);  ////<== row vector 1
+  vector_t *v2=ivector3_new(pt[1][1].x,pt[1][1].y,1.0);  ////<== row vector 2
+  vector_t *v3=ivector3_new(pt[1][2].x,pt[1][2].y,1.0);  ////<== row vector 3
+  matrix_t *BM=computeBM_from_UV(u1,u2,u3,v1,v2,v3);
+  predictClick.x=-1;predictClick.y=-1;
+  if(BM!=NULL) {
+    printf("BM ");matrix_print(BM);
+    vector_t *u4=ivector3_new(pt[0][3].x,pt[0][3].y,1.0);
+    vector_t *v4=matrix_mult_vector(BM,u4);
+    printf("va ");vector_print(v4);
+    predictClick.x=(int)v4->data[0];predictClick.y=(int)v4->data[1];
+  }
+  else {
+    printf("Please select other points.\n");
+  }
             }
             else if(e.key.keysym.sym=='z') {
               printf("please press a key...\n");
@@ -831,6 +852,7 @@ int sdl_main(int argc, char* argv[]) {
     }
 
     if(ptClick.x>=0 && ptClick.y>=0) {
+   // printf("%s(%4d) %s (%4d,%4d)\n",__FILE__,__LINE__,argv[1],ptClick.y,ptClick.y);
       SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); 
       DrawCircle(renderer, ptClick.x-srcRect.x, ptClick.y-srcRect.y, 10);
     } 
@@ -847,9 +869,15 @@ int sdl_main(int argc, char* argv[]) {
         SDL_SetRenderDrawColor(renderer, 255, 0,   0, 255); 
       }  
       DrawCircle(renderer, pt[nowpicID][i].x-srcRect.x, pt[nowpicID][i].y-srcRect.y, 10);
-
     }
 
+   if(predictClick.x!=-1 && predictClick.y!=-1) 
+   {
+//    printf("%s(%4d) %s (%4d,%4d)\n",__FILE__,__LINE__,argv[1],predictClick.x,predictClick.y);
+      SDL_SetRenderDrawColor(renderer, 255,  0,  255, 255);
+      DrawCircle(renderer, predictClick.x-srcRect.x, predictClick.y-srcRect.y, 10);
+//    predictClick.x=-1; predictClick.y=-1;
+    }
     SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
     SDL_RenderPresent(renderer);
   }
