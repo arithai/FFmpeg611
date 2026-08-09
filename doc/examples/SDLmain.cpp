@@ -292,6 +292,63 @@ void getver(wchar_t *pDest, int size, const wchar_t *fixstr);
 std::string WStringToString(const std::wstring& wstr);
 void mProduct(double x,double y);
 int getframe(const char *filename, int frame_index);
+#if 0
+typedef struct Text {
+  char * string;
+  size_t size;   /* Size of allocated memory. */
+  size_t length; /* Length of the actual string. */
+} Text;
+static int GrowText(Text * text, size_t new_size)
+{
+  char * new_text;
+  if(text->size==0) {
+    printf("%s(%3d)\n",__FILE__,__LINE__);
+    new_text = (char *)SDL_calloc(1, text->size);
+    new_text[0]='a';new_text[1]=0;
+  }
+  else {
+    printf("%s(%3d)\n",__FILE__,__LINE__);
+    new_text = (char *)SDL_realloc(text->string, text->size);
+  }
+  printf("%s(%3d)\n",__FILE__,__LINE__);
+  text->size += new_size;
+  if (!new_text) {
+ 	SDL_free(text->string);
+	return 1;
+  }
+  printf("%s(%3d)\n",__FILE__,__LINE__);
+  text->string = new_text;
+  return 0;
+}
+static int AppendText(Text * text, char * text_to_add)
+{
+  size_t tta_length = SDL_strlen(text_to_add);
+//Check if the text (including the terminating zero) even fits into 
+//the allocated memory.
+  if (text->size - text->length < tta_length + 1) {
+//It doesn't fit. We have to allocate more memory. */
+//Let's give it some extra bytes in case it's a short text. */
+    size_t new_size = tta_length < 512 ? 512 : tta_length;
+	if (GrowText(text, new_size)) {
+	  SDL_Log("Out of memory\n");
+	  return 1;
+	}
+  }
+  text->length = SDL_strlcat(text->string, text_to_add, text->size);
+  return 0;
+}
+static void RemoveCharacter(Text * text)
+{
+//Removing multi-byte characters from the UTF-8 string. */
+  while (text->length && text->string[text->length - 1] < -64) {
+	text->length--;
+  }
+  if (text->length) {
+	text->length--;
+  }
+  text->string[text->length] = 0;
+}
+#endif
 //matrix computation
 #include "matrix.h"
 int sdl_main(int argc, char* argv[]) {
@@ -448,15 +505,47 @@ int sdl_main(int argc, char* argv[]) {
   int is_extending = 0;
   SDL_Event e;
   int result = 0;
-  char cmd[10]={0};
-  char *cmdp=cmd;
+//char cmd[10]={0};
+//char *cmdp=cmd;
   int frame_index = 2;
+  SDL_Rect inputRect = { 200, 200, 240, 32 };
+#if 0
+  Text aText;
+  aText.size=0;aText.length=0;aText.string=NULL;
+  printf("%s(%3d)\n",__FILE__,__LINE__);
+  GrowText(&aText, 2);
+  printf("%s(%3d)\n",__FILE__,__LINE__);
+#endif
+  std::string inputText = "";
+  SDL_StartTextInput();
   while (!quit) {
     while (SDL_PollEvent(&e) != 0) {
       if (e.type == SDL_QUIT) {
         quit = 1;
       }
+// Capture committed text from keyboard or IME
+      else if (e.type == SDL_TEXTINPUT) {
+        inputText += e.text.text;
+        printf("%s(%3d) %s\n",__FILE__,__LINE__,e.text.text);
+#if 0
+        AppendText(&aText,e.text.text);
+        printf("Typed: %s\n", e.text.text);
+        result=strlen(e.text.text);
+        if (result>0 && e.text.text[result-1]=='q') {
+        //SDL_StopTextInput();
+        }
+#endif
+      }
+      // Optional: Capture composition changes (IME pre-edit state)
+      else if (e.type == SDL_TEXTEDITING) {
+        printf("Editing: (%c) %s (cursor at %d)\n", e.key.keysym.sym,
+          e.text.text, e.edit.start);
+      }
       else if (e.type == SDL_KEYDOWN) {
+        if (e.key.keysym.sym == SDLK_BACKSPACE && !inputText.empty()) {
+          inputText.pop_back();
+        }
+#if 0
       //Triggered exactly when a key is pressed down
       //Check which specific key was pressed
         switch (e.key.keysym.sym) {
@@ -468,7 +557,11 @@ int sdl_main(int argc, char* argv[]) {
             printf("Up arrow pressed!\n");
             break;
           case SDLK_SPACE:
-            printf("Spacebar pressed!\n");
+            printf("Space pressed!\n");
+            break;
+          case SDLK_BACKSPACE:
+//          RemoveCharacter(&aText);
+            printf("BACKSPACE pressed!\n");
             break;
           default:
             char *cmdn;
@@ -506,11 +599,21 @@ int sdl_main(int argc, char* argv[]) {
     vector_t *v4=matrix_mult_vector(BM,u4);
     printf("va ");vector_print(v4);
     predictClick.x=(int)v4->data[0];predictClick.y=(int)v4->data[1];
+    printf("%s(%4d) %s (%4d,%4d),(%4d,%4d)\n",__FILE__,__LINE__,argv[1],
+         srcRect.x,srcRect.y,predictClick.x-srcRect.x,predictClick.y-srcRect.y);
   }
   else {
     printf("Please select other points.\n");
   }
             }
+            else if(e.key.keysym.sym=='q') {
+// Define where the IME candidate window / text cursor box should appear
+              SDL_SetTextInputRect(&inputRect);
+// Start receiving text input events (enables IME/keyboard dispatch)
+              SDL_StartTextInput();
+
+
+            } 
             else if(e.key.keysym.sym=='z') {
               printf("please press a key...\n");
 
@@ -542,6 +645,7 @@ int sdl_main(int argc, char* argv[]) {
             }
             break;
         } //switch
+#endif
       }
       else if (e.type == SDL_MOUSEWHEEL) {
         is_dragging = false;
@@ -871,13 +975,27 @@ int sdl_main(int argc, char* argv[]) {
       DrawCircle(renderer, pt[nowpicID][i].x-srcRect.x, pt[nowpicID][i].y-srcRect.y, 10);
     }
 
-   if(predictClick.x!=-1 && predictClick.y!=-1) 
-   {
-//    printf("%s(%4d) %s (%4d,%4d)\n",__FILE__,__LINE__,argv[1],predictClick.x,predictClick.y);
+    if(predictClick.x!=-1 && predictClick.y!=-1) 
+    {
       SDL_SetRenderDrawColor(renderer, 255,  0,  255, 255);
       DrawCircle(renderer, predictClick.x-srcRect.x, predictClick.y-srcRect.y, 10);
-//    predictClick.x=-1; predictClick.y=-1;
     }
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderDrawRect(renderer, &inputRect);
+    // Render text if font is loaded and text isn't empty
+    if (Sans && !inputText.empty()) {
+//    char *t="Test";
+      printf("string=%s\n",inputText.c_str());
+      SDL_Color color = { 255, 255, 255, 255 };
+      SDL_Surface* surf = TTF_RenderText_Blended(Sans, inputText.c_str(), color);
+      SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, surf);    
+      SDL_Rect renderQuad = { inputRect.x + 5, inputRect.y + 5, surf->w, surf->h };
+      SDL_RenderCopy(renderer, text_texture, NULL, &renderQuad);
+      SDL_FreeSurface(surf);
+      SDL_DestroyTexture(text_texture);
+    }
+
     SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
     SDL_RenderPresent(renderer);
   }

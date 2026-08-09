@@ -969,9 +969,11 @@ static void display_frame(const AVFrame *frame, AVRational time_base)
 }
 #endif
 
+int sdltext_main(int argc, char *argv[]);
 int sdl_main(int argc, char *argv[]);
 int main(int argc, char **argv) {
-    sdl_main(argc, argv);
+//  sdl_main(argc, argv);
+    sdltext_main(argc, argv);
 }
 #define XLENGTH 3840
 int UEY[XLENGTH];
