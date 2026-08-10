@@ -206,13 +206,16 @@ Button myButton[6]= { { {  40, 50, 40, 40 }, false, "" },
                     };
 const int width  = 2160;
 const int height = 3840;
+//Screen dimension constants
+const int SCREEN_WIDTH = 972;
+const int SCREEN_HEIGHT = 576;
 // Set up source rectangle (e.g., cropping a 400x300 chunk starting at x=50, y=50)
 //SDL_Rect srcRect = {1200, 1000, 1056, 594};
-SDL_Rect srcRect   = {0, 0, 972, 576};
+SDL_Rect srcRect   = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
 // Set up destination rectangle (same size for true 1:1 "real" size)
-SDL_Rect srcMRect  = {0, 0, 972, 576};
-SDL_Rect destRect  = {0, 0, 972, 576}; 
-SDL_Rect destMRect = {0, 0, 972, 576}; 
+SDL_Rect srcMRect  = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+SDL_Rect destRect  = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT}; 
+SDL_Rect destMRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT}; 
 
 void Draw4K(SDL_Surface* surface,SDL_Renderer* renderer0, int yid) {
     SDL_Rect img_rect2;
@@ -292,63 +295,208 @@ void getver(wchar_t *pDest, int size, const wchar_t *fixstr);
 std::string WStringToString(const std::wstring& wstr);
 void mProduct(double x,double y);
 int getframe(const char *filename, int frame_index);
-#if 0
-typedef struct Text {
-  char * string;
-  size_t size;   /* Size of allocated memory. */
-  size_t length; /* Length of the actual string. */
-} Text;
-static int GrowText(Text * text, size_t new_size)
+
+//The window we'll be rendering to
+SDL_Window* gWindow = NULL;
+//The window renderer
+SDL_Renderer* gRenderer = NULL;
+//Globally used font
+TTF_Font* gFont = NULL;
+//Scene textures
+std::string PromptText = "Enter Text:"; 
+//Texture wrapper class
+class LTexture
 {
-  char * new_text;
-  if(text->size==0) {
-    printf("%s(%3d)\n",__FILE__,__LINE__);
-    new_text = (char *)SDL_calloc(1, text->size);
-    new_text[0]='a';new_text[1]=0;
-  }
-  else {
-    printf("%s(%3d)\n",__FILE__,__LINE__);
-    new_text = (char *)SDL_realloc(text->string, text->size);
-  }
-  printf("%s(%3d)\n",__FILE__,__LINE__);
-  text->size += new_size;
-  if (!new_text) {
- 	SDL_free(text->string);
-	return 1;
-  }
-  printf("%s(%3d)\n",__FILE__,__LINE__);
-  text->string = new_text;
-  return 0;
+  public:
+  //Initializes variables
+	LTexture();
+  //Deallocates memory
+	~LTexture();
+  //Loads image at specified path
+	bool loadFromFile( std::string path );
+	#if defined(SDL_TTF_MAJOR_VERSION)
+	//Creates image from font string
+	bool loadFromRenderedText( std::string textureText, SDL_Color textColor );
+	#endif
+	//Deallocates texture
+	void free();
+	//Set color modulation
+	void setColor( Uint8 red, Uint8 green, Uint8 blue );
+	//Set blending
+	void setBlendMode( SDL_BlendMode blending );
+	//Set alpha modulation
+	void setAlpha( Uint8 alpha );
+	//Renders texture at given point
+	void render( int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
+	//Gets image dimensions
+	int getWidth();
+	int getHeight();
+  private:
+  //The actual hardware texture
+	SDL_Texture* mTexture;
+	//Image dimensions
+	int mWidth;
+	int mHeight;
+};
+LTexture gPromptTextTexture;
+LTexture gInputTextTexture;
+LTexture::LTexture()
+{
+//Initialize
+  mTexture = NULL;
+  mWidth = 0;
+  mHeight = 0;
 }
-static int AppendText(Text * text, char * text_to_add)
+LTexture::~LTexture()
 {
-  size_t tta_length = SDL_strlen(text_to_add);
-//Check if the text (including the terminating zero) even fits into 
-//the allocated memory.
-  if (text->size - text->length < tta_length + 1) {
-//It doesn't fit. We have to allocate more memory. */
-//Let's give it some extra bytes in case it's a short text. */
-    size_t new_size = tta_length < 512 ? 512 : tta_length;
-	if (GrowText(text, new_size)) {
-	  SDL_Log("Out of memory\n");
-	  return 1;
+//Deallocate
+  free();
+}
+bool LTexture::loadFromFile( std::string path )
+{
+//Get rid of preexisting texture
+  free();
+//The final texture
+  SDL_Texture* newTexture = NULL;
+//Load image at specified path
+  SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
+  if( loadedSurface == NULL )
+  {
+    printf( "Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError() );
+  }
+  else
+  {
+  //Color key image
+    SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, 0, 0xFF, 0xFF ) );
+  //Create texture from surface pixels
+    newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+    if( newTexture == NULL )
+	{
+	  printf( "Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError() );
 	}
+	else
+	{
+	//Get image dimensions
+	  mWidth = loadedSurface->w;
+	  mHeight = loadedSurface->h;
+	}
+	//Get rid of old loaded surface
+	SDL_FreeSurface( loadedSurface );
   }
-  text->length = SDL_strlcat(text->string, text_to_add, text->size);
-  return 0;
+  //Return success
+  mTexture = newTexture;
+  return mTexture != NULL;
 }
-static void RemoveCharacter(Text * text)
+#if defined(SDL_TTF_MAJOR_VERSION)
+bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColor )
 {
-//Removing multi-byte characters from the UTF-8 string. */
-  while (text->length && text->string[text->length - 1] < -64) {
-	text->length--;
+//Get rid of preexisting texture
+  free();
+//Render text surface
+  SDL_Surface* textSurface = TTF_RenderText_Solid( gFont, textureText.c_str(), textColor );
+  if( textSurface != NULL )
+  {
+  //Create texture from surface pixels
+    mTexture = SDL_CreateTextureFromSurface( gRenderer, textSurface );
+    if( mTexture == NULL )
+	{
+	  printf( "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError() );
+	}
+	else
+	{
+	//Get image dimensions
+	  mWidth = textSurface->w;
+	  mHeight = textSurface->h;
+	}
+	//Get rid of old surface
+	SDL_FreeSurface( textSurface );
   }
-  if (text->length) {
-	text->length--;
+  else
+  {
+    printf( "(%4d)(%s), Unable to render text surface! SDL_ttf Error: %s\n", __LINE__,textureText.c_str(),TTF_GetError() );
   }
-  text->string[text->length] = 0;
+  //Return success
+  return mTexture != NULL;
 }
 #endif
+void LTexture::free()
+{
+  //Free texture if it exists
+  if( mTexture != NULL )
+  {
+	SDL_DestroyTexture( mTexture );
+	mTexture = NULL;
+	mWidth = 0;
+	mHeight = 0;
+  }
+}
+void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
+{
+//Modulate texture rgb
+  SDL_SetTextureColorMod( mTexture, red, green, blue );
+}
+void LTexture::setBlendMode( SDL_BlendMode blending )
+{
+//Set blending function
+  SDL_SetTextureBlendMode( mTexture, blending );
+}
+void LTexture::setAlpha( Uint8 alpha )
+{
+//Modulate texture alpha
+  SDL_SetTextureAlphaMod( mTexture, alpha );
+}
+void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
+{
+//Set rendering space and render to screen
+  SDL_Rect renderQuad = { x, y, mWidth, mHeight };
+//Set clip rendering dimensions
+  if( clip != NULL )
+  {
+	renderQuad.w = clip->w;
+	renderQuad.h = clip->h;
+  }
+//Render to screen
+  SDL_RenderCopyEx( gRenderer, mTexture, clip, &renderQuad, angle, center, flip );
+}
+int LTexture::getWidth()
+{
+  return mWidth;
+}
+int LTexture::getHeight()
+{
+  return mHeight;
+}
+bool loadMedia()
+{
+//Loading success flag
+  bool success = true;
+//Open the font
+//gFont = TTF_OpenFont( "32_text_input_and_clipboard_handling/lazy.ttf", 28 );
+//this opens a font style and sets a size
+//TTF_Font* gFont = TTF_OpenFont("FreeSans.ttf", 24);
+  gFont = TTF_OpenFont("m.ttf", 25);
+//TTF_Font* gFont = TTF_OpenFont( "C:/Windows/Fonts/kaiu.ttf", 25 );//???, ????C:/Windows/Fonts????
+//this is the color in rgb format,
+//maxing out all would give you the color white,
+//and it will be your text's color
+//gFont = TTF_OpenFont( "lazy.ttf", 28 );
+  if( gFont == NULL )
+  {
+	printf( "Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError() );
+	success = false;
+  }
+  else
+  {
+  //Render the prompt
+	SDL_Color textColor = { 0, 0, 0, 0xFF };
+	if( !gPromptTextTexture.loadFromRenderedText( PromptText, textColor ) )
+	{
+  	  printf( "Failed to render prompt text!\n" );
+	  success = false;
+	}
+  }
+  return success;
+}
 //matrix computation
 #include "matrix.h"
 int sdl_main(int argc, char* argv[]) {
@@ -391,12 +539,14 @@ int sdl_main(int argc, char* argv[]) {
 
   std::string utf8Title = WStringToString(verstr);
 //Create Window and Renderer
-  SDL_Window* window = SDL_CreateWindow(utf8Title.c_str(), SDL_WINDOWPOS_CENTERED, 
-      SDL_WINDOWPOS_CENTERED, 972, 576, SDL_WINDOW_SHOWN);
+//gWindow = SDL_CreateWindow(utf8Title.c_str(), SDL_WINDOWPOS_CENTERED, 
+//    SDL_WINDOWPOS_CENTERED, 972, 576, SDL_WINDOW_SHOWN);
+  gWindow = SDL_CreateWindow( utf8Title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
+      SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
 //SDL_Window* window = SDL_CreateWindow("Real Size JPG", 0, 0, width, height, SDL_WINDOW_SHOWN);
 //SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
-
+  gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_SOFTWARE);
+//gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
 //Load JPG into a surface
   sprintf(myButton[0].fstr,"%s/x%04d.jpg",fDirectory,picSN[0]);
   sprintf(myButton[1].fstr,"%s/x%04d.jpg",fDirectory,picSN[1]);
@@ -408,13 +558,12 @@ int sdl_main(int argc, char* argv[]) {
     SDL_Quit();
     return 1;
   }
-
 //Convert surface to texture
   SDL_Rect img_rect;
 #if 1
-  SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+  SDL_Texture* texture = SDL_CreateTextureFromSurface(gRenderer, surface);
 #else
-  SDL_Texture* texture = SDL_CreateTexture(renderer, 
+  SDL_Texture* texture = SDL_CreateTexture(gRenderer, 
       SDL_PIXELFORMAT_RGBA8888, 
       SDL_TEXTUREACCESS_STREAMING, 
       surface->w, surface->h);
@@ -433,18 +582,12 @@ int sdl_main(int argc, char* argv[]) {
     printf("Couldn't initialize SDL TTF: %s\n", SDL_GetError());
     exit(1);
   }
-//this opens a font style and sets a size
-//TTF_Font* Sans = TTF_OpenFont("FreeSans.ttf", 24);
-  TTF_Font* Sans = TTF_OpenFont("m.ttf", 25);
-//TTF_Font* Sans = TTF_OpenFont( "C:/Windows/Fonts/kaiu.ttf", 25 );//???, ????C:/Windows/Fonts????
-
-//this is the color in rgb format,
-//maxing out all would give you the color white,
-//and it will be your text's color
+  if( !loadMedia() )
+  {
+	printf( "Failed to load media!\n" );
+    exit(1);
+  }
   SDL_Color White = {255, 255, 255, 255};
-
-//???????????
-
 //wchar_t MyString[]=L"arithai.com 葉綠素生技 V2026.07.22     .01!";
   wchar_t *MyString=verstr;
   int MyStringLengh = wcslen(MyString); 
@@ -465,16 +608,16 @@ int sdl_main(int argc, char* argv[]) {
 //as TTF_RenderText_Solid could only be used on
 //SDL_Surface then you have to create the surface first
   SDL_Surface* surfaceMessage =
-//TTF_RenderText_Solid(Sans, "arithai.com v1.1!", White); 
-//TTF_RenderText_Blended(Sans, "arithai.com 葉綠素生技 v1.1!", White);
-  TTF_RenderUNICODE_Blended(Sans, PrintMyString, White);
-//TTF_RenderUNICODE_Solid( Sans, PrintMyString, White );
+//TTF_RenderText_Solid(gFont, "arithai.com v1.1!", White); 
+//TTF_RenderText_Blended(gFont, "arithai.com 葉綠素生技 v1.1!", White);
+  TTF_RenderUNICODE_Blended(gFont, PrintMyString, White);
+//TTF_RenderUNICODE_Solid( gFont, PrintMyString, White );
 //now you can convert it into a texture
-  SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+  SDL_Texture* Message = SDL_CreateTextureFromSurface(gRenderer, surfaceMessage);
 
   SDL_Rect Message_rect; //create a rect
-  Message_rect.x = 972-600;  //controls the rect's x coordinate 
-  Message_rect.y = 576-65; // controls the rect's y coordinte
+  Message_rect.x = SCREEN_WIDTH-600;  //controls the rect's x coordinate 
+  Message_rect.y = SCREEN_HEIGHT-125; // controls the rect's y coordinte
 //Message_rect.w = 200; // controls the width of the rect
 //Message_rect.h = 200; // controls the height of the rect
   Message_rect.w = surfaceMessage->w; // controls the width of the rect
@@ -505,50 +648,88 @@ int sdl_main(int argc, char* argv[]) {
   int is_extending = 0;
   SDL_Event e;
   int result = 0;
-//char cmd[10]={0};
-//char *cmdp=cmd;
+  char cmd[10]={0};
+  char *cmdp=cmd;
   int frame_index = 2;
-  SDL_Rect inputRect = { 200, 200, 240, 32 };
-#if 0
-  Text aText;
-  aText.size=0;aText.length=0;aText.string=NULL;
-  printf("%s(%3d)\n",__FILE__,__LINE__);
-  GrowText(&aText, 2);
-  printf("%s(%3d)\n",__FILE__,__LINE__);
-#endif
-  std::string inputText = "";
+  int cursorn=0;
+  std::string cursors[2]={"_","|"};
+
+  //Set text color as black
+  SDL_Color textColor = { 0, 0, 0, 0xFF };
+  //The current input text.
+  std::string inputText = " ";
+  gInputTextTexture.loadFromRenderedText( inputText.c_str(), textColor );
+  inputText = "";
+  //Enable text input
   SDL_StartTextInput();
+
+  Uint64 startTick = SDL_GetTicks();
+  Uint64 finalTick = SDL_GetTicks();
   while (!quit) {
+	//The rerender text flag
+	bool renderText = false;
     while (SDL_PollEvent(&e) != 0) {
       if (e.type == SDL_QUIT) {
         quit = 1;
       }
-// Capture committed text from keyboard or IME
-      else if (e.type == SDL_TEXTINPUT) {
-        inputText += e.text.text;
-        printf("%s(%3d) %s\n",__FILE__,__LINE__,e.text.text);
-#if 0
-        AppendText(&aText,e.text.text);
-        printf("Typed: %s\n", e.text.text);
-        result=strlen(e.text.text);
-        if (result>0 && e.text.text[result-1]=='q') {
-        //SDL_StopTextInput();
-        }
-#endif
-      }
-      // Optional: Capture composition changes (IME pre-edit state)
-      else if (e.type == SDL_TEXTEDITING) {
-        printf("Editing: (%c) %s (cursor at %d)\n", e.key.keysym.sym,
-          e.text.text, e.edit.start);
-      }
       else if (e.type == SDL_KEYDOWN) {
-        if (e.key.keysym.sym == SDLK_BACKSPACE && !inputText.empty()) {
-          inputText.pop_back();
-        }
-#if 0
+        #if 0				
+        typedef struct {
+          Uint8 scancode;
+          SDLKey sym;
+          SDLMod mod;
+          Uint16 unicode; unused
+        } SDL_keysym;
+        #endif
+        printf("%3d %02X,%02X,%02X,%04X\n",__LINE__,e.key.keysym.scancode,e.key.keysym.sym,
+               e.key.keysym.mod,e.key.keysym.unused);
       //Triggered exactly when a key is pressed down
       //Check which specific key was pressed
         switch (e.key.keysym.sym) {
+          case SDLK_BACKSPACE:
+            if(inputText.length() > 0) {
+			//lop off character
+			  inputText.pop_back();
+			  renderText = true;
+            }
+            printf("BACKSPACE pressed!\n");
+            break;
+          case SDLK_c:
+            if(SDL_GetModState() & KMOD_CTRL) {
+              SDL_SetClipboardText( inputText.c_str() );
+            }
+            else if(SDL_GetModState() & KMOD_SHIFT) {
+            }
+            else {
+              if(e.key.keysym.mod==0x2000)
+                inputText += toupper(e.key.keysym.sym);
+              else
+                inputText += e.key.keysym.sym;
+   			  renderText = true;
+              printf("%4d+,Ctrl-c pressed!\n",__LINE__);
+            }
+            printf("Ctrl-c pressed!\n");
+            break;
+          case SDLK_v:
+            if(SDL_GetModState() & KMOD_CTRL) {
+			//Copy text from temporary buffer
+ 			  char* tempText = SDL_GetClipboardText();
+			  inputText = tempText;
+			  SDL_free( tempText );
+  			  renderText = true;
+            }
+            else if(SDL_GetModState() & KMOD_SHIFT) {
+            }
+            else {
+              if(e.key.keysym.mod==0x2000)
+                inputText += toupper(e.key.keysym.sym);
+              else
+                inputText += e.key.keysym.sym;
+   			  renderText = true;
+              printf("%4d+,Ctrl-v pressed!\n",__LINE__);
+            }
+            printf("%4d,Ctrl-v pressed!\n",__LINE__);
+            break;
           case SDLK_ESCAPE:
             printf("Escape key pressed! Exiting...\n");
             quit =1;
@@ -557,16 +738,43 @@ int sdl_main(int argc, char* argv[]) {
             printf("Up arrow pressed!\n");
             break;
           case SDLK_SPACE:
-            printf("Space pressed!\n");
+            inputText += e.key.keysym.sym;
+			renderText = true;
+            printf("%4d+,Space pressed!\n",__LINE__);
             break;
-          case SDLK_BACKSPACE:
-//          RemoveCharacter(&aText);
-            printf("BACKSPACE pressed!\n");
+          case SDLK_RETURN:
+            if(inputText=="cal") {
+              mProduct(1.1,2.2);
+              PromptText = "mProduct done!";
+              printf("Enter Return pressed![%s]!\n",inputText.c_str());
+			  renderText = true;
+            } //show YUV 2026.08.10
+            else {
+              printf("Enter Return pressed!(%s)\n",inputText.c_str());
+            }
             break;
           default:
+            if(SDL_GetModState() & KMOD_SHIFT) {
+              printf("%4d shift,<<%c>>\n",__LINE__,e.key.keysym.sym);
+            }
+            else {
+              if(e.key.keysym.mod==0 || 
+                (e.key.keysym.mod==2 && e.key.keysym.sym>0) ) {
+			    inputText += e.key.keysym.sym;
+			    renderText = true;
+                printf("%4d+,<<%c>>\n",__LINE__,e.key.keysym.sym);
+                break;
+              }
+              else if(e.key.keysym.mod==0x2000) { //CAPS
+			    inputText += toupper(e.key.keysym.sym);
+			    renderText = true;
+                printf("%4d+,<<%c>>\n",__LINE__,e.key.keysym.sym);
+                break;
+              }
+            }
             char *cmdn;
             int n;
-            printf("<<%c>>\n",e.key.keysym.sym);
+            printf("%4d,<<%c>>\n",__LINE__,e.key.keysym.sym);
             if(e.key.keysym.sym=='a') {
 #if 0
   vector_t *u1=(vector_t *)ivector_new(pt[nowpicID][0].x,pt[nowpicID][0].y);
@@ -605,15 +813,8 @@ int sdl_main(int argc, char* argv[]) {
   else {
     printf("Please select other points.\n");
   }
+
             }
-            else if(e.key.keysym.sym=='q') {
-// Define where the IME candidate window / text cursor box should appear
-              SDL_SetTextInputRect(&inputRect);
-// Start receiving text input events (enables IME/keyboard dispatch)
-              SDL_StartTextInput();
-
-
-            } 
             else if(e.key.keysym.sym=='z') {
               printf("please press a key...\n");
 
@@ -621,10 +822,7 @@ int sdl_main(int argc, char* argv[]) {
                 char ch = getchar();
                 if (ch == 0x0A) {
                   *cmdp=0;printf("ch==0x0A,%s\n",cmd);
-                  if(!strcmp(cmd,"cal")) {
-                    mProduct(1.1,2.2);
-                  }
-                  else if(!memcmp(cmd,"load",4)) {
+                  if(!memcmp(cmd,"load",4)) {
                     cmdn = cmd+5;
                     n = atoi(cmdn);
                     frame_index = n;
@@ -645,7 +843,28 @@ int sdl_main(int argc, char* argv[]) {
             }
             break;
         } //switch
-#endif
+      }
+// Capture committed text from keyboard or IME
+      else if (e.type == SDL_TEXTINPUT) {
+         printf("%s(%3d) TEXTINPUT %s\n",__FILE__,__LINE__,e.text.text);
+ 	    //Not copy or pasting
+		if( !( SDL_GetModState() & KMOD_CTRL && ( e.text.text[ 0 ] == 'c' || e.text.text[ 0 ] == 'C' || e.text.text[ 0 ] == 'v' || e.text.text[ 0 ] == 'V' ) ) )
+		{
+		//Append character
+		  inputText += e.text.text;
+		  renderText = true;
+          printf("%3d+ %c\n",__LINE__,e.text.text[0]);
+		}
+        else {
+		  inputText += e.text.text;
+		  renderText = true;
+          printf("%3d+ %c\n",__LINE__,e.text.text[0]);
+	    }
+      }
+      // Optional: Capture composition changes (IME pre-edit state)
+      else if (e.type == SDL_TEXTEDITING) {
+        printf("Editing: TEXTEDITING %s (cursor at %d)\n", 
+          e.text.text, e.edit.start);
       }
       else if (e.type == SDL_MOUSEWHEEL) {
         is_dragging = false;
@@ -734,28 +953,28 @@ int sdl_main(int argc, char* argv[]) {
           myButton[0].isPressed = true;
           printf("Button Clicked!\n");
           surface = IMG_Load(myButton[0].fstr);
-          texture = SDL_CreateTextureFromSurface(renderer, surface);
+          texture = SDL_CreateTextureFromSurface(gRenderer, surface);
           nowpicID=0;
         }
         else if (isMouseOver(mouse_x, mouse_y, myButton[1].rect)) {
           myButton[1].isPressed = true;
           printf("Button Clicked!\n");
           surface = IMG_Load(myButton[1].fstr);
-          texture = SDL_CreateTextureFromSurface(renderer, surface);
+          texture = SDL_CreateTextureFromSurface(gRenderer, surface);
           nowpicID=1;
         }
         else if (isMouseOver(mouse_x, mouse_y, myButton[2].rect)) {
           myButton[2].isPressed = true;
           printf("Button Clicked!\n");
           surface = IMG_Load(myButton[2].fstr);
-          texture = SDL_CreateTextureFromSurface(renderer, surface);                     
+          texture = SDL_CreateTextureFromSurface(gRenderer, surface);                     
           nowpicID=2;
         }
         else if (isMouseOver(mouse_x, mouse_y, myButton[3].rect)) {
           myButton[3].isPressed = true;
-          Draw4K(surface,renderer,0);
-          Draw4K(surface,renderer,1);
-          Draw4K(surface,renderer,2);
+          Draw4K(surface,gRenderer,0);
+          Draw4K(surface,gRenderer,1);
+          Draw4K(surface,gRenderer,2);
           nowpicID=-1;
         }
         else {
@@ -897,54 +1116,54 @@ int sdl_main(int argc, char* argv[]) {
       getframe(argv[1], frame_index);
       snprintf(imgbuf, sizeof(imgbuf), "img/x%03d.jpg",frame_index); 
       surface = IMG_Load(imgbuf);
-      texture = SDL_CreateTextureFromSurface(renderer, surface);          
+      texture = SDL_CreateTextureFromSurface(gRenderer, surface);          
     }
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
+    SDL_RenderClear(gRenderer);
     // Draw the cropped portion
     if(is_zooming) 
     {
       if(is_extending==1) {
   //    printf("is_extending..(%4d,%4d,%4d,%4d)\n",destMRect.x,destMRect.y,destMRect.w,destMRect.h);
-        SDL_RenderCopy(renderer, texture, &srcMRect, &destMRect);            
+        SDL_RenderCopy(gRenderer, texture, &srcMRect, &destMRect);            
       }
       else {
-        SDL_RenderCopy(renderer, texture, &srcRect, &destRect);
+        SDL_RenderCopy(gRenderer, texture, &srcRect, &destRect);
       }
     }
     else { 
-      SDL_RenderCopy(renderer, texture, NULL, &img_rect);
+      SDL_RenderCopy(gRenderer, texture, NULL, &img_rect);
     }      
     if (myButton[0].isPressed) {
-      SDL_SetRenderDrawColor(renderer, 46, 204, 113, 255); // Green click accent
+      SDL_SetRenderDrawColor(gRenderer, 46, 204, 113, 255); // Green click accent
     } else {
-      SDL_SetRenderDrawColor(renderer, 52, 152, 219, 255); // Blue normal mode
+      SDL_SetRenderDrawColor(gRenderer, 52, 152, 219, 255); // Blue normal mode
     }
-    SDL_RenderFillRect(renderer, &myButton[0].rect);
+    SDL_RenderFillRect(gRenderer, &myButton[0].rect);
     if (myButton[1].isPressed) {
-      SDL_SetRenderDrawColor(renderer, 46, 204, 113, 255); // Green click accent
+      SDL_SetRenderDrawColor(gRenderer, 46, 204, 113, 255); // Green click accent
     } else {
-      SDL_SetRenderDrawColor(renderer, 52, 152, 219, 255); // Blue normal mode
+      SDL_SetRenderDrawColor(gRenderer, 52, 152, 219, 255); // Blue normal mode
     }
-    SDL_RenderFillRect(renderer, &myButton[1].rect);
+    SDL_RenderFillRect(gRenderer, &myButton[1].rect);
     if (myButton[2].isPressed) {
-      SDL_SetRenderDrawColor(renderer, 46, 204, 113, 255); // Green click accent
+      SDL_SetRenderDrawColor(gRenderer, 46, 204, 113, 255); // Green click accent
     } else {
-      SDL_SetRenderDrawColor(renderer, 52, 152, 219, 255); // Blue normal mode
+      SDL_SetRenderDrawColor(gRenderer, 52, 152, 219, 255); // Blue normal mode
     }
-    SDL_RenderFillRect(renderer, &myButton[2].rect);
+    SDL_RenderFillRect(gRenderer, &myButton[2].rect);
     if (myButton[3].isPressed) {
-      SDL_SetRenderDrawColor(renderer, 46, 204, 113, 255); // Green click accent
+      SDL_SetRenderDrawColor(gRenderer, 46, 204, 113, 255); // Green click accent
     } else {
-      SDL_SetRenderDrawColor(renderer, 52, 152, 219, 255); // Blue normal mode
+      SDL_SetRenderDrawColor(gRenderer, 52, 152, 219, 255); // Blue normal mode
     }
-    SDL_RenderFillRect(renderer, &myButton[3].rect);
+    SDL_RenderFillRect(gRenderer, &myButton[3].rect);
 
-    SDL_SetRenderDrawColor(renderer, 52, 152, 219, 255); // Blue normal mode
-    SDL_RenderFillRect(renderer, &myButton[4].rect);
-    SDL_SetRenderDrawColor(renderer,255, 0, 0, 255); // Blue normal mode
-    SDL_RenderFillRect(renderer, &myButton[5].rect);
+    SDL_SetRenderDrawColor(gRenderer, 52, 152, 219, 255); // Blue normal mode
+    SDL_RenderFillRect(gRenderer, &myButton[4].rect);
+    SDL_SetRenderDrawColor(gRenderer,255, 0, 0, 255); // Blue normal mode
+    SDL_RenderFillRect(gRenderer, &myButton[5].rect);
     if (myButton[5].isPressed) {
       quit = 0;
       myButton[5].isPressed = false;
@@ -957,55 +1176,69 @@ int sdl_main(int argc, char* argv[]) {
 
     if(ptClick.x>=0 && ptClick.y>=0) {
    // printf("%s(%4d) %s (%4d,%4d)\n",__FILE__,__LINE__,argv[1],ptClick.y,ptClick.y);
-      SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); 
-      DrawCircle(renderer, ptClick.x-srcRect.x, ptClick.y-srcRect.y, 10);
+      SDL_SetRenderDrawColor(gRenderer, 255, 255, 0, 255); 
+      DrawCircle(gRenderer, ptClick.x-srcRect.x, ptClick.y-srcRect.y, 10);
     } 
 
 //DrawCircle
     int n=nPt[nowpicID];
     if(n>10) n=10;
     for(int i=0;i<n;i++) {
-//    circleColor(renderer, pt[nowpicID][i].x, pt[nowpicID][i].y, 50, 0xFF0000FF);
+//    circleColor(gRenderer, pt[nowpicID][i].x, pt[nowpicID][i].y, 50, 0xFF0000FF);
       if(ptClickn==i) {
-        SDL_SetRenderDrawColor(renderer, 0,   0, 255, 255); 
+        SDL_SetRenderDrawColor(gRenderer, 0,   0, 255, 255); 
       }
       else {
-        SDL_SetRenderDrawColor(renderer, 255, 0,   0, 255); 
+        SDL_SetRenderDrawColor(gRenderer, 255, 0,   0, 255); 
       }  
-      DrawCircle(renderer, pt[nowpicID][i].x-srcRect.x, pt[nowpicID][i].y-srcRect.y, 10);
+      DrawCircle(gRenderer, pt[nowpicID][i].x-srcRect.x, pt[nowpicID][i].y-srcRect.y, 10);
     }
 
     if(predictClick.x!=-1 && predictClick.y!=-1) 
     {
-      SDL_SetRenderDrawColor(renderer, 255,  0,  255, 255);
-      DrawCircle(renderer, predictClick.x-srcRect.x, predictClick.y-srcRect.y, 10);
+      SDL_SetRenderDrawColor(gRenderer, 255,  0,  255, 255);
+      DrawCircle(gRenderer, predictClick.x-srcRect.x, predictClick.y-srcRect.y, 10);
     }
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderDrawRect(renderer, &inputRect);
-    // Render text if font is loaded and text isn't empty
-    if (Sans && !inputText.empty()) {
-//    char *t="Test";
-      printf("string=%s\n",inputText.c_str());
-      SDL_Color color = { 255, 255, 255, 255 };
-      SDL_Surface* surf = TTF_RenderText_Blended(Sans, inputText.c_str(), color);
-      SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, surf);    
-      SDL_Rect renderQuad = { inputRect.x + 5, inputRect.y + 5, surf->w, surf->h };
-      SDL_RenderCopy(renderer, text_texture, NULL, &renderQuad);
-      SDL_FreeSurface(surf);
-      SDL_DestroyTexture(text_texture);
-    }
+	//Rerender text if needed
+    finalTick = SDL_GetTicks();
+	if( renderText || (finalTick-startTick)>2000)
+	{
+      std::string inputTexts;
+	  //Text is not empty
+	  if( inputText != "" ) {
+        inputTexts = inputText+cursors[cursorn];
+      }
+      else {
+        inputTexts = " "+cursors[cursorn];
+      }  
+	  //Render new text
+	  gInputTextTexture.loadFromRenderedText( inputTexts.c_str(), textColor );
+      gPromptTextTexture.loadFromRenderedText( PromptText.c_str(), textColor );
+      cursorn++;
+      cursorn=cursorn&0x0001;
+      startTick = finalTick;
+	}
+	//Clear screen
+//	SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+//	SDL_RenderClear( gRenderer );
+    //Render text textures
+	gPromptTextTexture.render( 30, //( SCREEN_WIDTH - gPromptTextTexture.getWidth() ) / 2, 
+                              SCREEN_HEIGHT-2*gPromptTextTexture.getHeight()-10 );
+	gInputTextTexture.render( 30, //( SCREEN_WIDTH - gInputTextTexture.getWidth() ) / 2, 
+                              SCREEN_HEIGHT-gPromptTextTexture.getHeight()-5 );
 
-    SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
-    SDL_RenderPresent(renderer);
+
+    SDL_RenderCopy(gRenderer, Message, NULL, &Message_rect);
+    SDL_RenderPresent(gRenderer);
   }
 //LOOPexit:
   //Clean up
   SDL_FreeSurface(surfaceMessage);
   SDL_DestroyTexture(Message);
   SDL_DestroyTexture(texture);
-  SDL_DestroyRenderer(renderer);
-  SDL_DestroyWindow(window);
+  SDL_DestroyRenderer(gRenderer);
+  SDL_DestroyWindow(gWindow);
   IMG_Quit();
   SDL_Quit();
   TTF_Quit();

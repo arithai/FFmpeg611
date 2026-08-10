@@ -1375,3 +1375,9 @@ end_loop:
 //exit(0);
 }
 
+AVFrame *getFrame(char *jpgFileName) {
+  frame = av_frame_alloc();
+
+  return frame;
+}
+
