@@ -968,7 +968,7 @@ static void display_frame(const AVFrame *frame, AVRational time_base)
     fflush(stdout);
 }
 #endif
- int sdl_main(int argc, char *argv[]);
+int sdl_main(int argc, char *argv[]);
 int main(int argc, char **argv) {
   sdl_main(argc, argv);
 }

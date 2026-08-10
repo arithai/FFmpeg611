@@ -1693,7 +1693,7 @@ void mProduct(double x,double y) {
 #ifdef DEBUG
   printf("DEBUG %10.3f * %10.3f = %10.3f\n",x,y,x*y);
 #else
-   vector_t *v=vector_eye(3);
+  vector_t *v=vector_eye(3);
   printf("%10.3f * %10.3f = %10.3f,(%10.3f)\n",x,y,x*y,vector_norm2(v));
   vector_t *u1=(vector_t *)ivector_new(1,3);
   vector_t *u2=(vector_t *)ivector_new(3,1);

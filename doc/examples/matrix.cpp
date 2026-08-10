@@ -11,7 +11,7 @@ vector_t *vector_new(uint8_t dim)
   v->dim = dim;
   v->data = (double*)calloc(v->dim, sizeof(*v->data));
   return v;
-} 
+}
 vector_t *ivector_new(double u1,double u2)
 {
   vector_t *v = (vector_t *)calloc(1, sizeof(*v));

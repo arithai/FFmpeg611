@@ -833,7 +833,7 @@ int sdl_main(int argc, char* argv[]) {
             renderText = true;
             break;
           case SDLK_UP:
-             picSN_FreeMode++;
+            picSN_FreeMode++;
             sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
             surface = IMG_Load(fname);
             texture = SDL_CreateTextureFromSurface(gRenderer, surface);
