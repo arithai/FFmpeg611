@@ -411,10 +411,11 @@ https://github.com/livepeer/FFmpeg-6.1.1.git
 
 ffmpeg -i VID20260802132623.mp4 VID20260802132623/x%04d.jpg
 ffmpeg -i VID20260611082732.mp4 VID20260611082732/x%04d.jpg
-
+ffmpeg -i VID20260503072852.mp4 VID20260503072852/x%04d.jpg
 ffmpeg -i input.mp4 output_%03d.jpeg
 
-
+ffmpeg -i VID20260503072852.mp4 -c copy -metadata:s:v:0 rotate=90 output.mp4
+ffmpeg -i VID20260503072852.mp4 -vf "transpose=1" -metadata:s:v:0 rotate=0 -c:a copy output.mp4
 ./dfvmux3diff VID20260802131520.mp4 VID20260802131520_r1.mp4
 
 ./dfvmux3diff VID20260611082732.mp4 VID20260611082732_r1.mp4

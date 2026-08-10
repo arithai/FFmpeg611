@@ -26,6 +26,9 @@
 *.ptx.c
 *.ptx.gz
 *_g
+*.jpg
+point*.txt
+*.mp4
 SDLmain.cpp
 toolbox2.cpp
 act2.cpp

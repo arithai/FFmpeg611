@@ -39,9 +39,14 @@ char fDirectory[MAX_LINE_LENGTH];
 char ptfname[MAX_LINE_LENGTH];
 int picSN[20];
 int NpicSN;
+//isFreeMode picSN_FreeMode=1
+int picSN_FreeMode=0;
+SDL_Point pt_FreeMode[20];
+int nPt_FreeMode=0;
 char buffer[MAX_LINE_LENGTH];
 void initfDirectory(void) {
   int len;
+  int iline;
   strcpy(ptfname,"data.txt"); 
   strcpy(fDirectory,"../VID");
   if (access(fDirectory, F_OK) == 0) {
@@ -49,16 +54,28 @@ void initfDirectory(void) {
   else {
     fDirectory[0]=0;
   }
+  iline=0;
   if (access(ptfname, F_OK) == 0) {
     ptFile = fopen(ptfname,"rt");
     // Read line-by-line until fgets returns NULL
     while (fgets(buffer, sizeof(buffer), ptFile) != NULL) {
       len=strlen(buffer);
       if(buffer[len-1]==0x0A) buffer[len-1]=0;
-      if (access(buffer, F_OK) == 0) {
-        strcpy(fDirectory,buffer);
-        break;
-      }  
+      switch(iline) {
+        case 0:
+          if (access(buffer, F_OK) == 0) {
+            strcpy(fDirectory,buffer);
+            iline++;
+          }
+          break;
+        case 1:
+          if(buffer[0]=='1') {
+            printf("isFreeMode<==========\n");
+          }
+          break; 
+        default:
+          break;
+      }   
     }
     if(ptFile!=NULL) fclose(ptFile); 
     ptFile=NULL;
@@ -194,6 +211,73 @@ void DrawCircle(SDL_Renderer *renderer, int32_t centreX, int32_t centreY, int32_
             error += (tx - diameter);
         }
     }
+}
+void initPoint_FreeMode(void) {
+  char coor[6];
+  int totp=0;
+  int x,y;
+  char *split;
+  ptClick.x = -1;
+  ptClick.y = -1;
+  sprintf(ptfname,"%s/point%d.txt",fDirectory,picSN_FreeMode);  
+  if (access(ptfname, F_OK) == 0) {
+    // file exists
+    ptFile = fopen(ptfname,"rt");
+
+    // Read line-by-line until fgets returns NULL
+    while (fgets(buffer, sizeof(buffer), ptFile) != NULL) {
+        split=strstr(buffer,",");
+        if(split!=NULL && split!=buffer) {
+          memcpy(coor,buffer,split-buffer);coor[split-buffer]=0;
+          x=atoi(coor);
+          strcpy(coor,split+1);
+          y=atoi(coor);
+          pt_FreeMode[totp].x=x; pt_FreeMode[totp].y=y;
+          printf("%s,[%d],x=%4d,y=%4d\n", ptfname,totp,pt_FreeMode[totp].x, pt_FreeMode[totp].y);
+          totp++;
+          if(totp>15) break;
+        } 
+    }
+    if(ptFile!=NULL) fclose(ptFile); 
+    ptFile=NULL;
+    nPt_FreeMode = totp;
+  } else {
+    // file doesn't exist
+    ptFile = fopen(ptfname,"wt");
+    if(ptFile!=NULL) fclose(ptFile); 
+    ptFile=NULL;
+    nPt_FreeMode = 0;
+  }
+}
+int getPoint_FreeMode(int x,int y) {
+  int n;
+  //search
+  for(n=0;n<nPt_FreeMode;n++) {
+    if(x==pt_FreeMode[n].x && y==pt_FreeMode[n].y) {
+      return n;
+    }
+  }
+  return -1;
+}
+int putPoint_FreeMode(int x,int y) {
+  int n=nPt_FreeMode,i;
+  char buffer[MAX_LINE_LENGTH];
+  char ptfname[256];
+  if(getPoint_FreeMode(x,y)==-1) 
+  {
+    pt_FreeMode[n].x=x;pt_FreeMode[n].y=y;
+    sprintf(ptfname,"%s/point%d.txt",fDirectory,picSN_FreeMode);  
+    n++;if(n>15) n=15; nPt_FreeMode=n; 
+    ptFile = fopen(ptfname,"wt");
+    for(i=0;i<nPt_FreeMode;i++) {
+        sprintf(buffer,"%d,%d\n", pt_FreeMode[i].x, pt_FreeMode[i].y);
+        fputs(buffer, ptFile);
+    }
+    fclose(ptFile);
+
+    return n;
+  }
+  return n;
 }
 
 // Configure button specs: X, Y, Width, Height
@@ -737,8 +821,26 @@ int sdl_main(int argc, char* argv[]) {
             printf("Escape key pressed! Exiting...\n");
             quit =1;
             break;
+          case SDLK_DOWN:
+            char Prompt[256];char fname[256];
+            picSN_FreeMode--;
+            sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
+            surface = IMG_Load(fname);
+            texture = SDL_CreateTextureFromSurface(gRenderer, surface);
+            sprintf(Prompt,"Down %s arrow pressed!\n",fname);
+            initPoint_FreeMode();
+            PromptText = Prompt;
+            renderText = true;
+            break;
           case SDLK_UP:
-            printf("Up arrow pressed!\n");
+            picSN_FreeMode++;
+            sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
+            surface = IMG_Load(fname);
+            texture = SDL_CreateTextureFromSurface(gRenderer, surface);
+            initPoint_FreeMode();
+            sprintf(Prompt,"Up %s arrow pressed!\n",fname);
+            PromptText = Prompt;
+            renderText = true;
             break;
           case SDLK_SPACE:
             inputText += e.key.keysym.sym;
@@ -758,7 +860,8 @@ int sdl_main(int argc, char* argv[]) {
               if(ptClick.x<0) x0=0;
               if(ptClick.y<0) y0=0;
               testToolBox2(x0,y0);
-              surface = IMG_Load("../VID20260802132623/tmp.jpg");
+              sprintf(fname,"%s/tmp.jpg",fDirectory);
+              surface = IMG_Load(fname);
               texture = SDL_CreateTextureFromSurface(gRenderer, surface);
               PromptText = "testToolBox2 done!";
               printf("Enter Return pressed![%s]!\n",inputText.c_str());
@@ -766,7 +869,8 @@ int sdl_main(int argc, char* argv[]) {
             }
             else if(inputText=="loadtmp") {
               loadtmp();
-              surface = IMG_Load("../VID20260802132623/tmp.jpg");
+              sprintf(fname,"%s/tmp.jpg",fDirectory);
+              surface = IMG_Load(fname);
               texture = SDL_CreateTextureFromSurface(gRenderer, surface);
               PromptText = "loadtmp done!";
               printf("Enter Return pressed![%s]!\n",inputText.c_str());
@@ -797,6 +901,15 @@ int sdl_main(int argc, char* argv[]) {
               else {
                 printf("please select\n");
               }
+            }
+            else if(!memcmp(inputText.c_str(),"setsn",5)) {
+              picSN_FreeMode=atoi(&inputText.c_str()[6]);
+              printf("SN=%d\n",picSN_FreeMode);
+              char fname[256];
+              sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
+              surface = IMG_Load(fname);
+              texture = SDL_CreateTextureFromSurface(gRenderer, surface);
+              initPoint_FreeMode();
             }
             else {
               printf("Enter Return pressed!(%s)\n",inputText.c_str());
@@ -1059,8 +1172,13 @@ int sdl_main(int argc, char* argv[]) {
               dy = y-ptClick.y;
               if(sqrt(dx*dx+dy*dy)<50) {
                 printf("(%3d) x=%3d,y=%3d,px=%3d,py=%3d,now=%3d,pic=%3d\n",__LINE__,x,y,
-                ptClick.x,ptClick.y,nowpicID,picSN[nowpicID]); 
-                putPoint(nowpicID, ptClick.x, ptClick.y);
+                  ptClick.x,ptClick.y,nowpicID,picSN[nowpicID]); 
+                if(picSN_FreeMode>0) {
+                  putPoint_FreeMode(ptClick.x, ptClick.y);
+                }
+                else {
+                  putPoint(nowpicID, ptClick.x, ptClick.y);
+                }
                 printf("%d Click,%3d,%4d,%4d,%4d,%4d,%4d,%4d\n",__LINE__,nowpicID, mouse_x, mouse_y,
                      img_rect.x,img_rect.y,img_rect.w,img_rect.h);
               }
@@ -1072,8 +1190,14 @@ int sdl_main(int argc, char* argv[]) {
               if(rightclickcount==1) {
                 ptClickn=-1;
                 for(i=0;i<nPt[nowpicID];i++) {
-                  dx = x-pt[nowpicID][i].x;
-                  dy = y-pt[nowpicID][i].y;
+                  if(picSN_FreeMode>0) {
+                    dx = x-pt_FreeMode[i].x;
+                    dy = y-pt_FreeMode[i].y;
+                  }
+                  else {
+                    dx = x-pt[nowpicID][i].x;
+                    dy = y-pt[nowpicID][i].y;
+                  }
                   if(sqrt(dx*dx+dy*dy)<=7) {
                     ptClickn=i;
                     break;
@@ -1089,8 +1213,14 @@ int sdl_main(int argc, char* argv[]) {
                 char buffer[MAX_LINE_LENGTH];
                 char ptfname[256];
                 for(i=0;i<nPt[nowpicID];i++) {
-                  dx = x-pt[nowpicID][i].x;
-                  dy = y-pt[nowpicID][i].y;
+                  if(picSN_FreeMode>0) {
+                    dx = x-pt_FreeMode[i].x;
+                    dy = y-pt_FreeMode[i].y;
+                  }
+                  else {
+                    dx = x-pt[nowpicID][i].x;
+                    dy = y-pt[nowpicID][i].y;
+                  }
                   if(sqrt(dx*dx+dy*dy)<=7) {
                     ptClickn2=i;
                     break;
@@ -1101,21 +1231,40 @@ int sdl_main(int argc, char* argv[]) {
                         mouse_x - img_rect.x,mouse_y - img_rect.y);                
               //delete ptClickn2
                 if(ptClickn2>=0 && ptClickn2==ptClickn) {
-                  if(ptClickn2<nPt[nowpicID]-1) {                 
-                    for(i=ptClickn2;i<nPt[nowpicID]-1;i++) {
-                      pt[nowpicID][i].x=pt[nowpicID][i+1].x;
-                      pt[nowpicID][i].y=pt[nowpicID][i+1].y;
+                  if(picSN_FreeMode>0) {
+                    if(ptClickn2<nPt_FreeMode-1) {                 
+                      for(i=ptClickn2;i<nPt[nowpicID]-1;i++) {
+                        if(picSN_FreeMode>0) {
+                          pt_FreeMode[i].x=pt_FreeMode[i+1].x;
+                          pt_FreeMode[i].y=pt_FreeMode[i+1].y;
+                        }
+                      } 
                     }
+                    nPt_FreeMode=nPt_FreeMode-1;
+                    sprintf(ptfname,"%s/point%d.txt",fDirectory,picSN_FreeMode);   
+                    ptFile = fopen(ptfname,"wt");
+                    for(i=0;i<nPt_FreeMode;i++) {
+                      sprintf(buffer,"%d,%d\n", pt_FreeMode[i].x, pt_FreeMode[i].y);
+                      fputs(buffer, ptFile);
+                    }
+                    fclose(ptFile);
                   }
-                  nPt[nowpicID]=nPt[nowpicID]-1;
-
-                  sprintf(ptfname,"%s/point%d.txt",fDirectory,picSN[nowpicID]);   
-                  ptFile = fopen(ptfname,"wt");
-                  for(i=0;i<nPt[nowpicID];i++) {
-                    sprintf(buffer,"%d,%d\n", pt[nowpicID][i].x, pt[nowpicID][i].y);
-                    fputs(buffer, ptFile);
+                  else {
+                    if(ptClickn2<nPt[nowpicID]-1) {                 
+                      for(i=ptClickn2;i<nPt[nowpicID]-1;i++) {
+                        pt[nowpicID][i].x=pt[nowpicID][i+1].x;
+                        pt[nowpicID][i].y=pt[nowpicID][i+1].y;
+                      }
+                    }
+                    nPt[nowpicID]=nPt[nowpicID]-1;
+                    sprintf(ptfname,"%s/point%d.txt",fDirectory,picSN[nowpicID]);   
+                    ptFile = fopen(ptfname,"wt");
+                    for(i=0;i<nPt[nowpicID];i++) {
+                      sprintf(buffer,"%d,%d\n", pt[nowpicID][i].x, pt[nowpicID][i].y);
+                      fputs(buffer, ptFile);
+                    }
+                    fclose(ptFile);
                   }
-                  fclose(ptFile);
                 }
                 rightclickcount=0;ptClickn=-1;ptClickn2=-1;
               }
@@ -1230,17 +1379,33 @@ int sdl_main(int argc, char* argv[]) {
     } 
 
 //DrawCircle
-    int n=nPt[nowpicID];
-    if(n>10) n=10;
-    for(int i=0;i<n;i++) {
-//    circleColor(gRenderer, pt[nowpicID][i].x, pt[nowpicID][i].y, 50, 0xFF0000FF);
-      if(ptClickn==i) {
-        SDL_SetRenderDrawColor(gRenderer, 0,   0, 255, 255); 
+    if(picSN_FreeMode>0) {
+      int n=nPt_FreeMode;
+      if(n>10) n=10;
+      for(int i=0;i<n;i++) {
+//      circleColor(gRenderer, pt[nowpicID][i].x, pt[nowpicID][i].y, 50, 0xFF0000FF);
+        if(ptClickn==i) {
+          SDL_SetRenderDrawColor(gRenderer, 0,   0, 255, 255); 
+        }
+        else {
+          SDL_SetRenderDrawColor(gRenderer, 255, 0,   0, 255); 
+        }  
+        DrawCircle(gRenderer, pt_FreeMode[i].x-srcRect.x, pt_FreeMode[i].y-srcRect.y, 10);
       }
-      else {
-        SDL_SetRenderDrawColor(gRenderer, 255, 0,   0, 255); 
-      }  
-      DrawCircle(gRenderer, pt[nowpicID][i].x-srcRect.x, pt[nowpicID][i].y-srcRect.y, 10);
+    }
+    else {  
+      int n=nPt[nowpicID];
+      if(n>10) n=10;
+      for(int i=0;i<n;i++) {
+//      circleColor(gRenderer, pt[nowpicID][i].x, pt[nowpicID][i].y, 50, 0xFF0000FF);
+        if(ptClickn==i) {
+          SDL_SetRenderDrawColor(gRenderer, 0,   0, 255, 255); 
+        }
+        else {
+          SDL_SetRenderDrawColor(gRenderer, 255, 0,   0, 255); 
+        }  
+        DrawCircle(gRenderer, pt[nowpicID][i].x-srcRect.x, pt[nowpicID][i].y-srcRect.y, 10);
+      }
     }
 
     if(predictClick.x!=-1 && predictClick.y!=-1) 
