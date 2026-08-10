@@ -718,12 +718,12 @@ void fill_yuv_image(AVFrame *pict, int frame_index,
     
 }
 
-int savePicture(AVFrame *pFrame, char *out_name) {//??????
+int savePicture(AVFrame *pFrame, char *out_name) {
+//printf("%s(%4d) %X\n",__FILE__,__LINE__,pFrame);
   int width = pFrame->width;
   int height = pFrame->height;
   AVCodecContext *pCodeCtx = NULL;
   AVFormatContext *pFormatCtx = avformat_alloc_context();
-// ????????
   pFormatCtx->oformat = av_guess_format("mjpeg", NULL, NULL);
 // ????????AVIOContext
   if (avio_open(&pFormatCtx->pb, out_name, AVIO_FLAG_READ_WRITE) < 0) {
@@ -1375,9 +1375,133 @@ end_loop:
 //exit(0);
 }
 
-AVFrame *getFrame(char *jpgFileName) {
-  frame = av_frame_alloc();
-
+AVFormatContext *format_ctx = NULL;
+AVCodecContext *codec_ctx = NULL;
+const AVCodec *codec = NULL;
+AVPacket *packet = NULL;
+AVFrame *frame = NULL;
+AVFrame *getFrame(const char *filename) {
+   packet = av_packet_alloc();
+   frame  = av_frame_alloc();
+  // 1. Open the input file
+  if (avformat_open_input(&format_ctx, filename, NULL, NULL) < 0) {
+    fprintf(stderr, "Could not open source file %s\n", filename);
+    return NULL;
+  }
+  // 2. Find stream information
+  if (avformat_find_stream_info(format_ctx, NULL) < 0) {
+    fprintf(stderr, "Could not find stream information\n");
+    return NULL;
+  }
+  // 3. Find the video stream (JPG is treated as a single-frame video stream)
+  int stream_index = -1;
+  for (unsigned int i = 0; i < format_ctx->nb_streams; i++) {
+    if (format_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+      stream_index = i;
+      break;
+    }
+  }
+  if (stream_index == -1) {
+    fprintf(stderr, "Could not find video stream in file\n");
+    return NULL;
+  }
+  // 4. Find decoder for the JPG stream
+  AVCodecParameters *codec_params = format_ctx->streams[stream_index]->codecpar;
+  codec = avcodec_find_decoder(codec_params->codec_id);
+  if (!codec) {
+    fprintf(stderr, "Failed to find decoder\n");
+    return NULL;
+  }
+  // 5. Allocate and initialize codec context
+  codec_ctx = avcodec_alloc_context3(codec);
+  if (avcodec_parameters_to_context(codec_ctx, codec_params) < 0) {
+    fprintf(stderr, "Failed to copy codec params to context\n");
+    return NULL;
+  }
+  if (avcodec_open2(codec_ctx, codec, NULL) < 0) {
+    fprintf(stderr, "Failed to open codec\n");
+    return NULL;
+  }
+  // 6. Read frame from stream
+  int frame_finished = 0;
+  while (av_read_frame(format_ctx, packet) >= 0) {
+    if (packet->stream_index == stream_index) {
+    //Send the packet to the decoder
+      if (avcodec_send_packet(codec_ctx, packet) >= 0) {
+      //Receive the decoded frame
+        int ret = avcodec_receive_frame(codec_ctx, frame);
+        if (ret == 0) {
+          frame_finished = 1;
+          printf("Successfully decoded frame!\n");
+          printf("Width: %d, Height: %d, Pixel Format: %d\n", 
+                 frame->width, frame->height, frame->format);
+          break;
+        }
+      }
+    }
+    av_packet_unref(packet);
+  }
+  //Clean up
+#if 0
+  av_frame_free(&frame);
+  av_packet_free(&packet);
+  avcodec_free_context(&codec_ctx);
+  avformat_close_input(&format_ctx);
+#endif
+  if (!frame_finished) {
+    fprintf(stderr, "Failed to decode frame from JPG\n");
+    return NULL;
+  }
   return frame;
+}
+void freeAll(void) {
+  if(frame != NULL) av_frame_free(&frame);
+  if(packet != NULL) av_packet_free(&packet);
+  if(codec_ctx != NULL) avcodec_free_context(&codec_ctx);
+  if(format_ctx != NULL) avformat_close_input(&format_ctx);
+  frame = NULL;
+  packet = NULL;
+  codec_ctx = NULL;
+  format_ctx = NULL;
+}
+void testToolBox2(int x,int y) {
+  int x0=x;
+  int y0=y;
+  int Y0;
+  freeAll();
+  AVFrame *aframe=getFrame("../VID20260802132623/x0095.jpg");
+  printf("%s(%4d)\n",__FILE__,__LINE__);
+  Y0=frame->data[0][y0 * frame->linesize[0] + x0];
+  for (y = 0; y < codec_ctx->height; y++) {
+    for (x = 0; x < codec_ctx->width; x++) {
+      if( abs(frame->data[0][y * frame->linesize[0] + x]-Y0) > 20 )
+      {
+        frame->data[0][y * frame->linesize[0] + x]     = BLACKY;
+        frame->data[1][y/2 * frame->linesize[1] + x/2] = BLACKU;
+        frame->data[2][y/2 * frame->linesize[2] + x/2] = BLACKV; 
+      }  
+    }
+  }
+  savePicture(aframe, (char*)"../VID20260802132623/tmp.jpg");
+  aframe=aframe;
+}
+void getYUV(int frame_index,int x,int y,int *Y,int *U,int *V) {
+  char fname[256];
+  sprintf(fname,"../VID20260802132623/x%04d.jpg",frame_index);
+    printf("%s(%4d) (%4d,%4d)\n",__FILE__,__LINE__,x,y);
+  AVFrame *aframe=getFrame(fname);
+  if(x>=0 && y>0 && x<codec_ctx->width && y<codec_ctx->height) {
+    *Y=frame->data[0][y * frame->linesize[0] + x];
+    *U=frame->data[1][y/2 * frame->linesize[1] + x/2];
+    *V=frame->data[2][y/2 * frame->linesize[2] + x/2];
+  }
+  else {
+    printf("%s(%4d) (%4d,%4d)\n",__FILE__,__LINE__,x,y);
+  }
+  aframe=aframe;
+  freeAll();
+}
+void loadtmp(void) {
+  printf("%s(%4d)\n",__FILE__,__LINE__);
 }
 

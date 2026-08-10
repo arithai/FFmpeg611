@@ -497,6 +497,9 @@ bool loadMedia()
   }
   return success;
 }
+void testToolBox2(int x,int y);
+void loadtmp(void);
+void getYUV(int frame_index,int x,int y,int *Y,int *U,int *V);
 //matrix computation
 #include "matrix.h"
 int sdl_main(int argc, char* argv[]) {
@@ -749,6 +752,52 @@ int sdl_main(int argc, char* argv[]) {
               printf("Enter Return pressed![%s]!\n",inputText.c_str());
 			  renderText = true;
             } //show YUV 2026.08.10
+            else if(inputText=="test") {
+              int x0=ptClick.x;
+              int y0=ptClick.y;
+              if(ptClick.x<0) x0=0;
+              if(ptClick.y<0) y0=0;
+              testToolBox2(x0,y0);
+              surface = IMG_Load("../VID20260802132623/tmp.jpg");
+              texture = SDL_CreateTextureFromSurface(gRenderer, surface);
+              PromptText = "testToolBox2 done!";
+              printf("Enter Return pressed![%s]!\n",inputText.c_str());
+			  renderText = true;
+            }
+            else if(inputText=="loadtmp") {
+              loadtmp();
+              surface = IMG_Load("../VID20260802132623/tmp.jpg");
+              texture = SDL_CreateTextureFromSurface(gRenderer, surface);
+              PromptText = "loadtmp done!";
+              printf("Enter Return pressed![%s]!\n",inputText.c_str());
+			  renderText = true;
+            }
+            else if(inputText=="getYUV") {
+#define CLIP(X) ( (X) > 255 ? 255 : (X) < 0 ? 0 : X)
+// YUV -> RGB
+#define C(Y) ( (Y) - 16  )
+#define D(U) ( (U) - 128 )
+#define E(V) ( (V) - 128 )
+#define YUV2R(Y, U, V) CLIP(( 298 * C(Y)              + 409 * E(V) + 128) >> 8)
+#define YUV2G(Y, U, V) CLIP(( 298 * C(Y) - 100 * D(U) - 208 * E(V) + 128) >> 8)
+#define YUV2B(Y, U, V) CLIP(( 298 * C(Y) + 516 * D(U)              + 128) >> 8)
+              if(ptClick.x>=0 && ptClick.y>=0) {
+                char Prompt[256];
+                int frame_index0=picSN[nowpicID];
+                int x0=ptClick.x;
+                int y0=ptClick.y;
+                int Y0,U0,V0;
+                getYUV(frame_index0,x0,y0,&Y0,&U0,&V0);
+                sprintf(Prompt,"pt [%4d,%4d]=[%3d,%3d,%3d],[%3d,%3d,%3d]",x0,y0,Y0,U0,V0,
+                  YUV2R(Y0,U0,V0),YUV2G(Y0,U0,V0),YUV2B(Y0,U0,V0));
+                PromptText = Prompt;
+                printf("Enter Return pressed![%s][%s]!\n",inputText.c_str(),Prompt);
+			    renderText = true;
+              }
+              else {
+                printf("please select\n");
+              }
+            }
             else {
               printf("Enter Return pressed!(%s)\n",inputText.c_str());
             }
