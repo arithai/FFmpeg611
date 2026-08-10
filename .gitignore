@@ -29,6 +29,13 @@
 *.jpg
 point*.txt
 *.mp4
+SDLmain.cpp
+toolbox2.cpp
+act2.cpp
+act2.h
+matrix.cpp
+matrix.h
+Makefile.act
 \#*
 .\#*
 /.config
