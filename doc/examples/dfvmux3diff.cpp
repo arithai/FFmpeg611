@@ -969,6 +969,7 @@ static void display_frame(const AVFrame *frame, AVRational time_base)
 }
 #endif
 int sdl_main(int argc, char *argv[]);
+int dfvmux3diff_main(int argc, char **argv);
 int main(int argc, char **argv) {
   sdl_main(argc, argv);
 }

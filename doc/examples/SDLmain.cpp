@@ -343,7 +343,9 @@ void Draw4K(SDL_Surface* surface,SDL_Renderer* renderer0, int yid) {
     SDL_Delay(500);
 //  SDL_RenderPresent(renderer2);
     SDL_RenderReadPixels(renderer2, NULL,surface2->format->format, surface2->pixels, surface2->pitch);
-    SDL_RenderClear(renderer2); 
+//  SDL_RenderClear(renderer2); 
+//  SDL_Surface* surface5 = SDL_CreateRGBSurfaceWithFormat(0, 2160, 3840, 32, SDL_PIXELFORMAT_RGBA32);
+//  SDL_RenderReadPixels(renderer2, NULL, surface5->format->format, surface5->pixels, surface5->pitch);
 
     // Allocate buffer for 4K pixels
 //  std::vector<Uint32> pixels(width * height);
@@ -584,6 +586,9 @@ bool loadMedia()
 void testToolBox2(int x,int y);
 void loadtmp(void);
 void getYUV(int frame_index,int x,int y,int *Y,int *U,int *V);
+int generateMP4(const char *path,const char cprefix);
+void generateTXT(void); //it need all data
+int dfvmux3diff_main(int argc, char **argv);
 //matrix computation
 #include "matrix.h"
 int sdl_main(int argc, char* argv[]) {
@@ -911,6 +916,23 @@ int sdl_main(int argc, char* argv[]) {
               texture = SDL_CreateTextureFromSurface(gRenderer, surface);
               initPoint_FreeMode();
             }
+            else if(inputText=="genmp4") {
+              int result=generateMP4(fDirectory,'x');
+              result = result;
+            //dfvmux3diff_main(argc, argv);
+              sprintf(Prompt,"generateMP4 %s x",fDirectory);
+              PromptText = Prompt;
+              printf("Enter Return pressed! generateMP4 %s\n",fDirectory);
+	          renderText = true;
+            }
+            else if(inputText=="gentxt") {
+              generateTXT();
+              result = result;
+              sprintf(Prompt,"generateTXT %s",fDirectory);
+              PromptText = Prompt;
+              printf("Enter Return pressed! generateTXT %s\n",fDirectory);
+	          renderText = true;
+            }
             else {
               printf("Enter Return pressed!(%s)\n",inputText.c_str());
             }
@@ -1055,26 +1077,26 @@ int sdl_main(int argc, char* argv[]) {
                  srcRect.x, srcRect.y, srcRect.w, srcRect.h,
                  destRect.x, destRect.y, destRect.w, destRect.h
                 );
-          srcMRect.x=srcRect.x-srcRect.x*destRect.x/972;
-          srcMRect.y=srcRect.y-srcRect.y*destRect.y/576;
-          srcMRect.w=972*srcRect.w/destRect.w;
+          srcMRect.x=srcRect.x-srcRect.x*destRect.x/SCREEN_WIDTH;
+          srcMRect.y=srcRect.y-srcRect.y*destRect.y/SCREEN_HEIGHT;
+          srcMRect.w=SCREEN_WIDTH*srcRect.w/destRect.w;
           srcMRect.h=576*srcRect.h/destRect.h;
-          if(srcMRect.h>3840) {
+          if(srcMRect.h>height) {
             srcMRect.x=0;
             srcMRect.y=0;
-            srcMRect.w=2160;
-            srcMRect.h=3840;
+            srcMRect.w=width;
+            srcMRect.h=height;
 
             destMRect.x=324;
             destMRect.y=0;
             destMRect.w=324;
-            destMRect.h=576;               
+            destMRect.h=SCREEN_HEIGHT;               
           }  
           else {
             destMRect.x=0;
             destMRect.y=0;
-            destMRect.w=972;
-            destMRect.h=576;               
+            destMRect.w=SCREEN_WIDTH;
+            destMRect.h=SCREEN_HEIGHT;               
           }
           is_extending = 1;
         }
@@ -1458,5 +1480,127 @@ int sdl_main(int argc, char* argv[]) {
   TTF_Quit();
 
   return 0;
+}
+//using SDL put text save to jpg
+void generateTXT(void) {
+  SDL_Rect img_rect2;
+  img_rect2.x    = 0;
+  img_rect2.y    = 0;
+  img_rect2.w    = width;
+  img_rect2.h    = height;
+  char fname[256];
+  int frame_index=0;
+  //Create a hidden window & 4K software renderer
+  //SDL_Window* window2 = SDL_CreateWindow("4K Circle", 0, 0, width, height, SDL_WINDOW_HIDDEN);
+  SDL_Window* window2 = SDL_CreateWindow("4K Circle", 0, 0, width, height, SDL_WINDOW_SHOWN);
+  SDL_Renderer* renderer2 = SDL_CreateRenderer(window2, -1, SDL_RENDERER_SOFTWARE);
+  SDL_Surface* surface3;
+  SDL_Texture* texture2;
+  SDL_Surface* surface2;
+  
+  SDL_Color Red = {0, 0, 255, 255};
+  wchar_t MyString[]=L"咖啡 @arithai.com V26.08.11.01!";
+//wchar_t *MyString=verstr;
+  int MyStringLengh = wcslen(MyString); 
+  char DecToHex[20]; 
+  Uint16 PrintMyString[MyStringLengh];
+//setlocale(LC_ALL, "en_US.utf8");
+//swprintf(MyString, sizeof MyString/sizeof *MyString,
+//         L"arithai.com 葉綠素生技 V'%s'.01", __DATE__); 
+  for (int i = 0; i < MyStringLengh; i++) {
+  //itoa(MyString[i], DecToHex, 16);  
+    snprintf(DecToHex, sizeof(DecToHex), "%02X", MyString[i]); 
+  //wchar MyString to utf5 DecToHex
+    PrintMyString[i]= strtol(DecToHex,NULL,16);
+  }
+  PrintMyString[MyStringLengh]={0};
+//wprintf(L"[%s]中\n",MyString);
+//as TTF_RenderText_Solid could only be used on
+//SDL_Surface then you have to create the surface first
+  SDL_Surface* surfaceMessage =
+//TTF_RenderText_Solid(gFont, "arithai.com v1.1!", White); 
+//TTF_RenderText_Blended(gFont, "arithai.com 葉綠素生技 v1.1!", White);
+  TTF_RenderUNICODE_Blended(gFont, PrintMyString, Red);
+//TTF_RenderUNICODE_Solid( gFont, PrintMyString, White );
+//now you can convert it into a texture
+  SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer2, surfaceMessage);
+  SDL_Rect Message_rect; //create a rect
+//Message_rect.w = 200; // controls the width of the rect
+//Message_rect.h = 200; // controls the height of the rect
+  Message_rect.w = surfaceMessage->w; // controls the width of the rect
+  Message_rect.h = surfaceMessage->h; // controls the height of the rect
+  while (1) {   
+    frame_index++;
+    picSN_FreeMode=frame_index;
+    initPoint_FreeMode();
+    sprintf(fname,"%s/x%04d.jpg",fDirectory,frame_index);
+    if (access(fname,F_OK)!=0) break;
+    surface3 = IMG_Load(fname);
+    texture2 = SDL_CreateTextureFromSurface(renderer2, surface3);
+    surface2 = SDL_ConvertSurfaceFormat(surface3, SDL_PIXELFORMAT_ARGB8888, 0);
+    //Set background to black
+    //SDL_SetRenderDrawColor(renderer2, 255, 255, 255, 255);
+    //SDL_RenderClear(renderer2);
+    //SDL_RenderCopy(renderer2, texture, &img_rect2, &img_rect2);
+    //SDL_RenderPresent(renderer2);
+    //Draw a white circle in the center with a radius of 500 pixels
+    printf("%d\n",__LINE__);
+    //SDL_SetRenderDrawColor(renderer2, 255, 255, 255, 255);
+    //SDL_RenderClear(renderer2);
+    SDL_RenderCopy(renderer2, texture2, NULL, &img_rect2); 
+    //SDL_RenderPresent(renderer2);    //present renderer
+    //SDL_SetRenderDrawColor(renderer2, 0,  0, 0, 255);
+    //DrawCircle(renderer2, 100, 100, 100); 
+    int n=nPt_FreeMode;
+    if(n>10) n=10;
+    for(int i=0;i<n;i++) {
+    //circleColor(renderer, pt[nowpicID][i].x, pt[nowpicID][i].y, 50, 0xFF0000FF);
+      SDL_SetRenderDrawColor(renderer2, 0, 0, 255, 255); 
+
+      #if 1
+      DrawCircle(renderer2, pt_FreeMode[i].x, pt_FreeMode[i].y, 80);
+      
+      Message_rect.x = pt_FreeMode[i].x;  //controls the rect's x coordinate
+      if(pt_FreeMode[i].y<10)
+        Message_rect.y = 10;  //controls the rect's x coordinate
+      else 
+        Message_rect.y = pt_FreeMode[i].y;  //controls the rect's x coordinate
+     SDL_RenderCopy(renderer2, Message, NULL, &Message_rect); 
+     #endif
+    }
+
+    SDL_RenderPresent(renderer2);    //present renderer
+    //SDL_Delay(500);
+    //SDL_RenderPresent(renderer2);
+    SDL_RenderReadPixels(renderer2, NULL,surface2->format->format, surface2->pixels, surface2->pitch);
+    SDL_RenderClear(renderer2); 
+    //Allocate buffer for 4K pixels
+    //std::vector<Uint32> pixels(width * height);
+    //SDL_LockSurface(surface);
+    //Calculate the total size in bytes (pitch * height)
+    //Assuming 32-bit (4 bytes) pixels, we divide by 4 to get the vector size
+    size_t pixelCount = (surface2->w * surface2->h) ;
+    printf("%d,%lld,%d,%d,%d\n",__LINE__,pixelCount,surface2->pitch,surface2->h,surface2->w);  
+    //Create the vector and directly copy the pixel memory
+    Uint32* pixelsData = static_cast<Uint32*>(surface2->pixels);
+    std::vector<Uint32> pixels2(pixelsData, pixelsData + pixelCount);
+    //std::vector<Uint32> pixels(pixels2);
+    //Unlock surface when done
+    //SDL_RenderReadPixels(renderer2, NULL, SDL_PIXELFORMAT_ARGB8888, surface->pixels, surface->pitch);
+    //Read the pixels from the renderer into memory
+    //SDL_RenderReadPixels(renderer2, NULL, SDL_PIXELFORMAT_ARGB8888, pixels.data(), width * sizeof(Uint32));
+    //Save as 4K JPG (quality: 90)
+    //stbi_write_jpg("output_4k.jpg", width, height, 4, pixels.data(), 90);
+    sprintf(ptfname,"%s/y%04d.jpg",fDirectory,frame_index);  
+    //stbi_write_jpg(ptfname, width, height, 4, pixels.data(), 90);
+    stbi_write_jpg(ptfname, width, height, 4, pixels2.data(), 90);
+  }  
+//SDL_UnlockSurface(surface);
+//Clean up
+  SDL_DestroyRenderer(renderer2);
+  SDL_DestroyWindow(window2);
+
+  generateMP4(fDirectory, 'y');
+  return;
 }
 
