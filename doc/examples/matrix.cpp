@@ -1267,7 +1267,6 @@ void BLUE3x4(void) {
   A->data[2][2]=u3->data[2];A->data[2][3]=u3->data[3];
   A->data[3][0]=u4->data[0];A->data[3][1]=u4->data[1];
   A->data[3][2]=u4->data[2];A->data[3][3]=u4->data[3];
-//test
   printf("A ");matrix_print(A);
   bool isSingular = computeFullPivLU(A,L,U,B,E);
   printf("B=%3d,%3d,%3d,%3d\n",B[0],B[1],B[2],B[3]);
