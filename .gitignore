@@ -28,14 +28,7 @@
 *_g
 *.jpg
 *.mp4
-point*.txt
-SDLmain*.cpp
-toolbox2*.cpp
-act2*.cpp
-act2*.h
-matrix*.cpp
-matrix*.h
-Makefile*.act
+*.txt
 \#*
 .\#*
 /.config
