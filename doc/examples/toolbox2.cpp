@@ -1519,7 +1519,7 @@ void testToolBox2(const char*fname,const char *fDirectory,int x,int y) {
 }
 void getYUV(int frame_index,int x,int y,int *Y,int *U,int *V) {
   char fname[256];
-  sprintf(fname,"../VID20260802132623/x%04d.jpg",frame_index);
+  sprintf(fname,"../VID20260802132623/x%04d.jpg",frame_index); //test
   printf("%s(%4d) (%4d,%4d)\n",__FILE__,__LINE__,x,y);
   AVFrame *aframe=getFrame(fname);
   if(x>=0 && y>0 && x<codec_ctx->width && y<codec_ctx->height) {
