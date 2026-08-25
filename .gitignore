@@ -29,6 +29,13 @@
 *.jpg
 *.mp4
 *.txt
+doc/examples/SDLmain*.cpp
+doc/examples/toolbox2*.cpp
+doc/examples/act2*.cpp
+doc/examples/act2*.h
+doc/examples/matrix*.cpp
+doc/examples/matrix*.h
+doc/examples/Makefile*.act
 \#*
 .\#*
 /.config
