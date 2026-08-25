@@ -44,8 +44,9 @@ int picSN_FreeMode=0;
 SDL_Point pt_FreeMode[20];
 int nPt_FreeMode=0;
 char buffer[MAX_LINE_LENGTH];
+SDL_Point srcPt = {-1, -1};
 void initfDirectory(void) {
-  int len;
+  int len,coor;
   int iline;
   strcpy(ptfname,"data.txt"); 
   strcpy(fDirectory,"../VID");
@@ -55,6 +56,8 @@ void initfDirectory(void) {
     fDirectory[0]=0;
   }
   iline=0;
+  srcPt.x=0;
+  srcPt.y=0;
   if (access(ptfname, F_OK) == 0) {
     ptFile = fopen(ptfname,"rt");
     // Read line-by-line until fgets returns NULL
@@ -69,9 +72,14 @@ void initfDirectory(void) {
           }
           break;
         case 1:
-          if(buffer[0]=='1') {
-            printf("isFreeMode<==========\n");
-          }
+          coor=atoi(buffer);
+          if(coor>0) srcPt.x=coor;
+          iline++;
+          break; 
+        case 2:
+          coor=atoi(buffer);
+          if(coor>0) srcPt.y=coor;
+          iline++;
           break; 
         default:
           break;
@@ -80,6 +88,27 @@ void initfDirectory(void) {
     if(ptFile!=NULL) fclose(ptFile); 
     ptFile=NULL;
   }
+  printf("%d,srcPt=(%d,%d)\n",__LINE__,srcPt.x,srcPt.y);
+}
+void putfDirectory(void) {
+  strcpy(ptfname,"data.txt"); 
+  ptFile = fopen(ptfname,"wt");
+  fprintf(ptFile, "%s\n",fDirectory);
+  fprintf(ptFile, "%d\n",srcPt.x);
+  fprintf(ptFile, "%d\n",srcPt.y);
+  if(ptFile!=NULL) fclose(ptFile); 
+  ptFile=NULL;
+  printf("%d,srcPt=(%d,%d)\n",__LINE__,srcPt.x,srcPt.y);
+}
+void putData(void) {
+  strcpy(ptfname,"data.txt"); 
+  ptFile = fopen(ptfname,"wt");
+  fprintf(ptFile,"%s\n",fDirectory);
+  fprintf(ptFile,"%d\n",srcPt.x);
+  fprintf(ptFile,"%d\n",srcPt.y);
+  if(ptFile!=NULL) fclose(ptFile); 
+  ptFile=NULL;
+  printf("%d,srcPt=(%d,%d)\n",__LINE__,srcPt.x,srcPt.y);
 }
 void initpicSN(void) {
   int i,x,j;
@@ -113,6 +142,28 @@ void initpicSN(void) {
     printf("ptfname=%s,NpicSN=%d\n",ptfname,NpicSN);
   }
 }
+void putpicSN(void) {
+  int i;
+  if(fDirectory[0]==0) {
+    printf("putpicSN no Directory\n");
+    return;
+  }
+  sprintf(ptfname,"%s/data.txt",fDirectory);  
+  if (access(ptfname, F_OK) == 0) {
+    // file exists
+    ptFile = fopen(ptfname,"wt");
+
+    // Read line-by-line until fgets returns NULL
+    i=0;
+    for (i=0;i<NpicSN;i++) {
+      fprintf(ptFile,"%d\n",picSN[i]);
+      if(i>15) break;
+    }
+    if(ptFile!=NULL) fclose(ptFile); 
+    ptFile=NULL;
+    printf("ptfname=%s,NpicSN=%d\n",ptfname,NpicSN);
+  }
+}
 void initPoint(int picID) {
   char coor[6];
   int totp=0;
@@ -120,7 +171,7 @@ void initPoint(int picID) {
   char *split;
   ptClick.x = -1;
   ptClick.y = -1;
-  sprintf(ptfname,"%s/point%d.txt",fDirectory,picSN[picID]);  
+  sprintf(ptfname,"%s/ooint%04d.txt",fDirectory,picSN[picID]);  
   if (access(ptfname, F_OK) == 0) {
     // file exists
     ptFile = fopen(ptfname,"rt");
@@ -167,7 +218,7 @@ int putPoint(int picID,int x,int y) {
   if(getPoint(picID,x,y)==-1) 
   {
     pt[picID][n].x=x;pt[picID][n].y=y;
-    sprintf(ptfname,"%s/point%d.txt",fDirectory,picSN[picID]);  
+    sprintf(ptfname,"%s/ooint%04d.txt",fDirectory,picSN[picID]);  
     n++;if(n>15) n=15; nPt[picID]=n; 
     ptFile = fopen(ptfname,"wt");
     for(i=0;i<nPt[picID];i++) {
@@ -219,7 +270,7 @@ void initPoint_FreeMode(void) {
   char *split;
   ptClick.x = -1;
   ptClick.y = -1;
-  sprintf(ptfname,"%s/point%d.txt",fDirectory,picSN_FreeMode);  
+  sprintf(ptfname,"%s/point%04d.txt",fDirectory,picSN_FreeMode);  
   if (access(ptfname, F_OK) == 0) {
     // file exists
     ptFile = fopen(ptfname,"rt");
@@ -266,7 +317,7 @@ int putPoint_FreeMode(int x,int y) {
   if(getPoint_FreeMode(x,y)==-1) 
   {
     pt_FreeMode[n].x=x;pt_FreeMode[n].y=y;
-    sprintf(ptfname,"%s/point%d.txt",fDirectory,picSN_FreeMode);  
+    sprintf(ptfname,"%s/point%04d.txt",fDirectory,picSN_FreeMode);  
     n++;if(n>15) n=15; nPt_FreeMode=n; 
     ptFile = fopen(ptfname,"wt");
     for(i=0;i<nPt_FreeMode;i++) {
@@ -293,6 +344,8 @@ const int height = 3840;
 //Screen dimension constants
 const int SCREEN_WIDTH = 972;
 const int SCREEN_HEIGHT = 576;
+const SDL_Rect jpgRect   = {0, 0, 2160, 3840};
+SDL_Rect jpgRects   = {0, 0, 2160, 3840}; //scale
 // Set up source rectangle (e.g., cropping a 400x300 chunk starting at x=50, y=50)
 //SDL_Rect srcRect = {1200, 1000, 1056, 594};
 SDL_Rect srcRect   = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
@@ -560,7 +613,7 @@ bool loadMedia()
 //gFont = TTF_OpenFont( "32_text_input_and_clipboard_handling/lazy.ttf", 28 );
 //this opens a font style and sets a size
 //TTF_Font* gFont = TTF_OpenFont("FreeSans.ttf", 24);
-  gFont = TTF_OpenFont("m.ttf", 25);
+  gFont = TTF_OpenFont("m.ttf", 24);
 //TTF_Font* gFont = TTF_OpenFont( "C:/Windows/Fonts/kaiu.ttf", 25 );//???, ????C:/Windows/Fonts????
 //this is the color in rgb format,
 //maxing out all would give you the color white,
@@ -583,12 +636,57 @@ bool loadMedia()
   }
   return success;
 }
-void testToolBox2(int x,int y);
+// Function to duplicate and scale an existing SDL_Texture
+SDL_Texture* DuplicateAndScaleTexture(SDL_Renderer* renderer, SDL_Texture* srcTex, float scaleFactor) {
+  Uint32 format;
+  int access, srcW, srcH;
+  // 1. Get properties of the source texture
+  if (SDL_QueryTexture(srcTex, &format, &access, &srcW, &srcH) != 0) {
+    printf("Failed to query texture: %s\n", SDL_GetError());
+    return nullptr;
+  }
+  // Calculate new scaled dimensions
+  int destW = static_cast<int>(srcW * scaleFactor);
+  int destH = static_cast<int>(srcH * scaleFactor);
+  // 2. Backup the current render target so we don't break the main loop
+  SDL_Texture* oldTarget = SDL_GetRenderTarget(renderer);
+  // 3. Create a new texture with TARGET access to allow rendering onto it
+  SDL_Texture* dupTex = SDL_CreateTexture(renderer, format, SDL_TEXTUREACCESS_TARGET, destW, destH);
+  if (!dupTex) {
+    printf("Failed to query texture: %s\n", SDL_GetError());
+    return nullptr;
+  }
+  // Preserve the original blend mode (critical for transparency/alpha channels)
+  SDL_BlendMode blendMode;
+  SDL_GetTextureBlendMode(srcTex, &blendMode);
+  SDL_SetTextureBlendMode(dupTex, blendMode);
+  // 4. Redirect rendering to our new texture
+  if (SDL_SetRenderTarget(renderer, dupTex) != 0) {
+    printf("Failed to query texture: %s\n", SDL_GetError());
+    SDL_DestroyTexture(dupTex);
+    return nullptr;
+  }
+  // Clear the new texture surface (useful if it has transparency)
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+  SDL_RenderClear(renderer);
+  // 5. Render the source texture onto the new texture (stretching it to fit the new size)
+  SDL_Rect destRect = { 0, 0, destW, destH };
+  if (SDL_RenderCopy(renderer, srcTex, NULL, &destRect) != 0) {
+    printf("Failed to query texture: %s\n", SDL_GetError());
+  }
+  SDL_RenderPresent(renderer);
+  // 6. Restore the original render target (usually the window backbuffer)
+  SDL_SetRenderTarget(renderer, oldTarget);
+  return dupTex;
+}
+void testToolBox2(const char *fname,const char *fDirectory,int x,int y);
 void loadtmp(void);
 void getYUV(int frame_index,int x,int y,int *Y,int *U,int *V);
 int generateMP4(const char *path,const char cprefix);
 void generateTXT(void); //it need all data
 int dfvmux3diff_main(int argc, char **argv);
+void callext(const char *exename);
+void BLUE3x4(void);
 //matrix computation
 #include "matrix.h"
 int sdl_main(int argc, char* argv[]) {
@@ -605,23 +703,6 @@ int sdl_main(int argc, char* argv[]) {
     return 1;
   }
  
-  initfDirectory();
-  printf("Get directory [%s]<======\n",fDirectory);
-    
-  initpicSN();
-  if(NpicSN<3) {
-    printf("No pictures are assigned.\n");exit(0);
-  } 
-  for(i=0;i<NpicSN;i++) {
-    printf("picSN[%4d]=%04d\n",i,picSN[i]);
-  }
-  predictClick.x=-1;predictClick.y=-1;
-
-  initPoint(0);
-//putPoint(0,7,7);
-  initPoint(1);
-  initPoint(2);
-
 //Initialize SDL_image for JPG
   int flags = IMG_INIT_JPG;
   if ((IMG_Init(flags) & flags) != flags) {
@@ -637,8 +718,43 @@ int sdl_main(int argc, char* argv[]) {
       SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
 //SDL_Window* window = SDL_CreateWindow("Real Size JPG", 0, 0, width, height, SDL_WINDOW_SHOWN);
 //SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-  gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_SOFTWARE);
-//gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
+  gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_SOFTWARE |  SDL_RENDERER_TARGETTEXTURE);
+//gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC ); 
+// Popup window (Borderless & Floating)
+//SDL_Window* popupWindow = SDL_CreateWindow("Popup Menu", 200, 200, 300, 150, SDL_WINDOW_BORDERLESS | SDL_WINDOW_ALWAYS_ON_TOP);
+  SDL_Window* popupWindow = SDL_CreateWindow("Popup Menu", 200, 200, 400, 300, SDL_WINDOW_ALWAYS_ON_TOP);
+  SDL_Renderer* popupRenderer = SDL_CreateRenderer(popupWindow, -1, SDL_RENDERER_ACCELERATED);
+  std::vector<std::string> items = {"VID20260503072852", "VID20260701152055", "VID20260802132623", "VID20260825123112"};
+  int selectedIndex = 0;
+  SDL_Rect listboxRect = {50, 50, 300, 200};
+  int itemHeight = 30;
+Redraw:
+  initfDirectory();
+  fDirectory[20]=0;
+  printf("Get directory [%s]<======\n",fDirectory);
+  for (i=0;i<(int)items.size();i++) {
+    if(!memcmp(items[i].c_str(),&fDirectory[3],17)) {
+      selectedIndex = i;
+      break;
+    }
+  }
+   
+  initpicSN();
+  if(NpicSN<3) {
+    printf("No pictures are assigned.\n");exit(0);
+  } 
+  for(i=0;i<NpicSN;i++) {
+    printf("picSN[%4d]=%04d\n",i,picSN[i]);
+  }
+  predictClick.x=-1;predictClick.y=-1;
+
+  initPoint(0);
+//putPoint(0,7,7);
+  initPoint(1);
+  initPoint(2);
+  picSN_FreeMode = picSN[nowpicID];
+  initPoint_FreeMode();
+
 //Load JPG into a surface
   sprintf(myButton[0].fstr,"%s/x%04d.jpg",fDirectory,picSN[0]);
   sprintf(myButton[1].fstr,"%s/x%04d.jpg",fDirectory,picSN[1]);
@@ -652,8 +768,10 @@ int sdl_main(int argc, char* argv[]) {
   }
 //Convert surface to texture
   SDL_Rect img_rect;
+  SDL_Texture* texture;
+  SDL_Texture* scaleTexture = NULL;
 #if 1
-  SDL_Texture* texture = SDL_CreateTextureFromSurface(gRenderer, surface);
+  texture  = SDL_CreateTextureFromSurface(gRenderer, surface);
 #else
   SDL_Texture* texture = SDL_CreateTexture(gRenderer, 
       SDL_PIXELFORMAT_RGBA8888, 
@@ -727,7 +845,7 @@ int sdl_main(int argc, char* argv[]) {
 //to dabble with cropping), and the rect which is the size
 //and coordinate of your texture
 
-  int zoomFactorX = 18; // Pixels to scale per scroll
+  int zoomFactorX = 54; // Pixels to scale per scroll
   int zoomFactorY = 32; // Pixels to scale per scroll
   int offset_x = 0, offset_y = 0;
   bool is_dragging = false;
@@ -749,11 +867,27 @@ int sdl_main(int argc, char* argv[]) {
   //Set text color as black
   SDL_Color textColor = { 0, 0, 0, 0xFF };
   //The current input text.
-  std::string inputText = " ";
-  gInputTextTexture.loadFromRenderedText( inputText.c_str(), textColor );
-  inputText = "";
+  std::string inputText = "";
+//gInputTextTexture.loadFromRenderedText( inputText.c_str(), textColor );
+//inputText = "";
   //Enable text input
   SDL_StartTextInput();
+
+  if(srcPt.x>=0 && srcPt.y>=0) {
+     srcRect.x = srcPt.x;
+     srcRect.y = srcPt.y;
+     img_rect.x = -srcRect.x;
+     img_rect.y = -srcRect.y;
+  }
+#if 0
+  myButton[0].isPressed = true;
+  printf("Button 0 Clicked!\n");
+  surface = IMG_Load(myButton[0].fstr);
+  texture = SDL_CreateTextureFromSurface(gRenderer, surface);
+  nowpicID=0;
+  SDL_RenderCopy(gRenderer, texture, &srcRect, &destRect);
+#endif
+  picSN_FreeMode=picSN[nowpicID]; //for testToolBox
 
   Uint64 startTick = SDL_GetTicks();
   Uint64 finalTick = SDL_GetTicks();
@@ -763,6 +897,41 @@ int sdl_main(int argc, char* argv[]) {
     while (SDL_PollEvent(&e) != 0) {
       if (e.type == SDL_QUIT) {
         quit = 1;
+      }
+      else if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_CLOSE) {
+// Handling popup window close event specifically
+        if (e.window.windowID == SDL_GetWindowID(popupWindow)) {
+          SDL_HideWindow(popupWindow);
+        }
+        else { quit=1;}
+      }
+      else if (e.window.windowID == SDL_GetWindowID(popupWindow)) {
+        if (e.type == SDL_MOUSEBUTTONDOWN) {
+          int mouseX = e.button.x;
+          int mouseY = e.button.y;
+          if (mouseX >= listboxRect.x && mouseX <= listboxRect.x + listboxRect.w &&
+            mouseY >= listboxRect.y && mouseY <= listboxRect.y + listboxRect.h) {
+            int clickedIndex = (mouseY - listboxRect.y) / itemHeight;
+            if (clickedIndex >= 0 && clickedIndex < (int)items.size()) {
+              selectedIndex = clickedIndex;
+              printf("selectedIndex %d,%s\n",selectedIndex,items[selectedIndex].c_str());
+            }
+          }
+        } else if (e.type == SDL_KEYDOWN) {
+          if (e.key.keysym.sym == SDLK_DOWN && selectedIndex < (int)items.size() - 1) {
+            selectedIndex++;
+            printf("selectedIndex %d,%s\n",selectedIndex,items[selectedIndex].c_str());
+          } else if (e.key.keysym.sym == SDLK_UP && selectedIndex > 0) {
+            selectedIndex--;
+            printf("selectedIndex %d,%s\n",selectedIndex,items[selectedIndex].c_str());
+          }
+        }
+        if(memcmp(items[selectedIndex].c_str(),&fDirectory[3],17)) {
+          memcpy(&fDirectory[3],items[selectedIndex].c_str(),17);
+          printf("fDirectory=%s,goto Redraw\n",fDirectory);  
+          putfDirectory();
+          goto Redraw;
+        }
       }
       else if (e.type == SDL_KEYDOWN) {
         #if 0				
@@ -853,7 +1022,14 @@ int sdl_main(int argc, char* argv[]) {
             printf("%4d+,Space pressed!\n",__LINE__);
             break;
           case SDLK_RETURN:
-            if(inputText=="cal") {
+            if(inputText=="exe") {
+              callext("ffmpeg -stream_loop -1 -i output.mp4 -i a.mp3 -map 0:v:0 -map 1:a:0 "
+                      "-c:v copy -c:a aac -shortest output2.mp4 -y");
+              PromptText = "callext done 2!";
+              printf("Enter Return pressed![%s] 2!\n",inputText.c_str());
+			  renderText = true;
+            }    
+            else if(inputText=="cal") {
               mProduct(1.1,2.2);
               PromptText = "mProduct done!";
               printf("Enter Return pressed![%s]!\n",inputText.c_str());
@@ -863,13 +1039,16 @@ int sdl_main(int argc, char* argv[]) {
               int x0=ptClick.x;
               int y0=ptClick.y;
               if(ptClick.x<0) x0=0;
+              char fname[256];
               if(ptClick.y<0) y0=0;
-              testToolBox2(x0,y0);
+              if(picSN_FreeMode==0) picSN_FreeMode=1;
+              sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
+              testToolBox2(fname,fDirectory,x0,y0);
               sprintf(fname,"%s/tmp.jpg",fDirectory);
               surface = IMG_Load(fname);
               texture = SDL_CreateTextureFromSurface(gRenderer, surface);
               PromptText = "testToolBox2 done!";
-              printf("Enter Return pressed![%s]!\n",inputText.c_str());
+              printf("Enter Return pressed![%s](%d,%d))!\n",inputText.c_str(),ptClick.x,ptClick.y);
 			  renderText = true;
             }
             else if(inputText=="loadtmp") {
@@ -878,7 +1057,7 @@ int sdl_main(int argc, char* argv[]) {
               surface = IMG_Load(fname);
               texture = SDL_CreateTextureFromSurface(gRenderer, surface);
               PromptText = "loadtmp done!";
-              printf("Enter Return pressed![%s]!\n",inputText.c_str());
+              printf("Enter Return pressed![%s] 2!\n",inputText.c_str());
 			  renderText = true;
             }
             else if(inputText=="getYUV") {
@@ -916,6 +1095,25 @@ int sdl_main(int argc, char* argv[]) {
               texture = SDL_CreateTextureFromSurface(gRenderer, surface);
               initPoint_FreeMode();
             }
+            else if(!memcmp(inputText.c_str(),"setpn",5)) { //setpn 1,11,21
+              char *p0=(char *)&inputText.c_str()[6];
+              int picSN0=atoi(p0);
+              if(picSN0>0) picSN[0]=picSN0;else picSN[0]=1;
+              p0=strstr(p0,",");p0++;picSN0=atoi(p0);
+              if(picSN0>picSN[0]) picSN[1]=picSN0;else picSN[1]=picSN[0]+1;
+              p0=strstr(p0,",");p0++;picSN0=atoi(p0);
+              if(picSN0>picSN[1]) picSN[2]=picSN0;else picSN[2]=picSN[1]+1;
+              NpicSN=3;
+              printf("SN=%4d,%4d,%4d\n",picSN[0],picSN[1],picSN[2]);
+              putpicSN();
+              char fname[256];
+              nowpicID=0;
+              picSN_FreeMode=picSN[nowpicID];
+              sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
+              surface = IMG_Load(fname);
+              texture = SDL_CreateTextureFromSurface(gRenderer, surface);
+              initPoint_FreeMode();
+            }
             else if(inputText=="genmp4") {
               int result=generateMP4(fDirectory,'x');
               result = result;
@@ -944,9 +1142,55 @@ int sdl_main(int argc, char* argv[]) {
             else {
               if(e.key.keysym.mod==0 || 
                 (e.key.keysym.mod==2 && e.key.keysym.sym>0) ) {
-			    inputText += e.key.keysym.sym;
-			    renderText = true;
-                printf("%4d+,<<%c>>\n",__LINE__,e.key.keysym.sym);
+                if(e.key.keysym.sym=='a' && inputText.length()==0) {
+                  printf("%4d+,<%lld,%c>\n",__LINE__,inputText.length(),e.key.keysym.sym);
+              	  #if 0
+                  vector_t *u1=(vector_t *)ivector_new(pt[nowpicID][0].x,pt[nowpicID][0].y);
+                  vector_t *u2=(vector_t *)ivector_new(pt[nowpicID][1].x,pt[nowpicID][1].y);
+                  vector_t *xv1=(vector_t *)ivector6_new(0,0.1,0.3,0.2,0,0.8);
+                  matrix_t *A=(matrix_t *)matrix_from_vectors(u1,u2);
+                  matrix_t *b=(matrix_t *)SolveB_from_Ax(A,xv1);
+                  vector_t *u3=(vector_t *)ivector_new(pt[nowpicID][2].x,pt[nowpicID][2].y);
+                  vector_t *xv3=(vector_t *)matrix_mult_vector(b, u3);
+                  vector_print(xv3);
+                  vector_t *xv4=(vector_t *)matrix_mult_vector(b, u1);
+                  vector_print(xv4);
+                  vector_t *xv5=(vector_t *)matrix_mult_vector(b, u2);
+                  vector_print(xv5);
+                  printf("=================\n");
+                  lr_main();
+                  #endif
+                //u1->v1 u2->v2 u3->v3
+                  vector_t *u1=ivector3_new(pt[0][0].x,pt[0][0].y,1.0);
+                  vector_t *u2=ivector3_new(pt[0][1].x,pt[0][1].y,1.0);
+                  vector_t *u3=ivector3_new(pt[0][2].x,pt[0][2].y,1.0);
+                  vector_t *v1=ivector3_new(pt[1][0].x,pt[1][0].y,1.0);  ////<== row vector 1
+                  vector_t *v2=ivector3_new(pt[1][1].x,pt[1][1].y,1.0);  ////<== row vector 2
+                  vector_t *v3=ivector3_new(pt[1][2].x,pt[1][2].y,1.0);  ////<== row vector 3
+                  matrix_t *BM=computeBM_from_UV(u1,u2,u3,v1,v2,v3);
+                  predictClick.x=-1;predictClick.y=-1;
+                  if(BM!=NULL) {
+                    printf("BM ");matrix_print(BM);
+                    vector_t *v20=matrix_mult_vector(BM,u2);
+                    printf("v2  ");vector_print(v2);
+                    printf("v20 ");vector_print(v20); //check BM
+                    vector_t *u4=ivector3_new(pt[0][3].x,pt[0][3].y,1.0);
+                    vector_t *v4=matrix_mult_vector(BM,u4);
+                    printf("va ");vector_print(v4);
+                    predictClick.x=(int)v4->data[0];predictClick.y=(int)v4->data[1];
+                    printf("%s(%4d) %s (%4d,%4d),(%4d,%4d)\n",__FILE__,__LINE__,argv[1],
+                      srcRect.x,srcRect.y,predictClick.x-srcRect.x,predictClick.y-srcRect.y);
+                  }
+                  else {
+                    printf("Please select other points.\n");
+                  }		    
+                }
+                else {
+                  inputText += e.key.keysym.sym;
+			      renderText = true;
+                }
+                printf("%4d+,<%lld,%c>\n",__LINE__,inputText.length(),e.key.keysym.sym);
+                BLUE3x4();
                 break;
               }
               else if(e.key.keysym.mod==0x2000) { //CAPS
@@ -960,43 +1204,7 @@ int sdl_main(int argc, char* argv[]) {
             int n;
             printf("%4d,<<%c>>\n",__LINE__,e.key.keysym.sym);
             if(e.key.keysym.sym=='a') {
-#if 0
-  vector_t *u1=(vector_t *)ivector_new(pt[nowpicID][0].x,pt[nowpicID][0].y);
-  vector_t *u2=(vector_t *)ivector_new(pt[nowpicID][1].x,pt[nowpicID][1].y);
-  vector_t *xv1=(vector_t *)ivector6_new(0,0.1,0.3,0.2,0,0.8);
-  matrix_t *A=(matrix_t *)matrix_from_vectors(u1,u2);
-  matrix_t *b=(matrix_t *)SolveB_from_Ax(A,xv1);
-  vector_t *u3=(vector_t *)ivector_new(pt[nowpicID][2].x,pt[nowpicID][2].y);
-  vector_t *xv3=(vector_t *)matrix_mult_vector(b, u3);
-  vector_print(xv3);
-  vector_t *xv4=(vector_t *)matrix_mult_vector(b, u1);
-  vector_print(xv4);
-  vector_t *xv5=(vector_t *)matrix_mult_vector(b, u2);
-  vector_print(xv5);
-  printf("=================\n");
-  lr_main();
-#endif
-//u1->v1 u2->v2 u3->v3
-  vector_t *u1=ivector3_new(pt[0][0].x,pt[0][0].y,1.0);
-  vector_t *u2=ivector3_new(pt[0][1].x,pt[0][1].y,1.0);
-  vector_t *u3=ivector3_new(pt[0][2].x,pt[0][2].y,1.0);
-  vector_t *v1=ivector3_new(pt[1][0].x,pt[1][0].y,1.0);  ////<== row vector 1
-  vector_t *v2=ivector3_new(pt[1][1].x,pt[1][1].y,1.0);  ////<== row vector 2
-  vector_t *v3=ivector3_new(pt[1][2].x,pt[1][2].y,1.0);  ////<== row vector 3
-  matrix_t *BM=computeBM_from_UV(u1,u2,u3,v1,v2,v3);
-  predictClick.x=-1;predictClick.y=-1;
-  if(BM!=NULL) {
-    printf("BM ");matrix_print(BM);
-    vector_t *u4=ivector3_new(pt[0][3].x,pt[0][3].y,1.0);
-    vector_t *v4=matrix_mult_vector(BM,u4);
-    printf("va ");vector_print(v4);
-    predictClick.x=(int)v4->data[0];predictClick.y=(int)v4->data[1];
-    printf("%s(%4d) %s (%4d,%4d),(%4d,%4d)\n",__FILE__,__LINE__,argv[1],
-         srcRect.x,srcRect.y,predictClick.x-srcRect.x,predictClick.y-srcRect.y);
-  }
-  else {
-    printf("Please select other points.\n");
-  }
+
 
             }
             else if(e.key.keysym.sym=='z') {
@@ -1057,19 +1265,19 @@ int sdl_main(int argc, char* argv[]) {
       //SDL_QueryTexture(texture, NULL, NULL, &img_rect.w, &img_rect.h);
       //Adjust dimensions on mouse wheel
         if (e.wheel.y > 0) { // Scroll Up (Zoom In)
-          destRect.w += zoomFactorX;
-          destRect.h += zoomFactorY;
           destRect.x -= zoomFactorX / 2; // Center the zoom
           destRect.y -= zoomFactorY / 2;
+          destRect.w += zoomFactorX;
+          destRect.h += zoomFactorY;
         } else if (e.wheel.y < 0) { // Scroll Down (Zoom Out)
-          destRect.w -= zoomFactorX;
-          destRect.h -= zoomFactorY;
           destRect.x += zoomFactorX / 2;
           destRect.y += zoomFactorY / 2;
+          destRect.w -= zoomFactorX;
+          destRect.h -= zoomFactorY;
         }
       //srcRect.x = img_rect.x;
       //srcRect.y = img_rect.y;
-//Remapping if zoom out 2026.7.4
+//Remapping if zoom out 2026.7.4,  86.4=576*3/20
         if(srcRect.x>0 && srcRect.y>0 && destRect.x>0 && destRect.y>0 && destRect.h>48) {
           printf("**[%4d,%4d,%4d,%4d],z=(%4d,%4d,%4d),s=(%4d,%4d,%4d,%4d),d=(%4d,%4d,%4d,%4d)\n",
                  img_rect.x, img_rect.y, img_rect.w, img_rect.h,  
@@ -1080,16 +1288,16 @@ int sdl_main(int argc, char* argv[]) {
           srcMRect.x=srcRect.x-srcRect.x*destRect.x/SCREEN_WIDTH;
           srcMRect.y=srcRect.y-srcRect.y*destRect.y/SCREEN_HEIGHT;
           srcMRect.w=SCREEN_WIDTH*srcRect.w/destRect.w;
-          srcMRect.h=576*srcRect.h/destRect.h;
+          srcMRect.h=SCREEN_HEIGHT*srcRect.h/destRect.h;
           if(srcMRect.h>height) {
             srcMRect.x=0;
             srcMRect.y=0;
             srcMRect.w=width;
             srcMRect.h=height;
 
-            destMRect.x=324;
+            destMRect.x=SCREEN_WIDTH/3;
             destMRect.y=0;
-            destMRect.w=324;
+            destMRect.w=SCREEN_WIDTH/3;
             destMRect.h=SCREEN_HEIGHT;               
           }  
           else {
@@ -1137,22 +1345,32 @@ int sdl_main(int argc, char* argv[]) {
           myButton[0].isPressed = true;
           printf("Button Clicked!\n");
           surface = IMG_Load(myButton[0].fstr);
-          texture = SDL_CreateTextureFromSurface(gRenderer, surface);
           nowpicID=0;
+          picSN_FreeMode = picSN[nowpicID]; 
+          initPoint_FreeMode();
+          texture = SDL_CreateTextureFromSurface(gRenderer, surface);          
+          scaleTexture = DuplicateAndScaleTexture(gRenderer, texture, 1);
         }
         else if (isMouseOver(mouse_x, mouse_y, myButton[1].rect)) {
           myButton[1].isPressed = true;
-          printf("Button Clicked!\n");
+          printf("Button Clicked<======!\n");
           surface = IMG_Load(myButton[1].fstr);
-          texture = SDL_CreateTextureFromSurface(gRenderer, surface);
           nowpicID=1;
+          picSN_FreeMode = picSN[nowpicID]; 
+          initPoint_FreeMode();
+          texture = SDL_CreateTextureFromSurface(gRenderer, surface);
+          scaleTexture = DuplicateAndScaleTexture(gRenderer, texture, 2);
+        //SDL_DestroyTexture(texture);
         }
         else if (isMouseOver(mouse_x, mouse_y, myButton[2].rect)) {
           myButton[2].isPressed = true;
           printf("Button Clicked!\n");
           surface = IMG_Load(myButton[2].fstr);
-          texture = SDL_CreateTextureFromSurface(gRenderer, surface);                     
           nowpicID=2;
+          picSN_FreeMode = picSN[nowpicID]; 
+          initPoint_FreeMode();
+          texture = SDL_CreateTextureFromSurface(gRenderer, surface);          
+          scaleTexture = DuplicateAndScaleTexture(gRenderer, texture, 2);
         }
         else if (isMouseOver(mouse_x, mouse_y, myButton[3].rect)) {
           myButton[3].isPressed = true;
@@ -1160,6 +1378,7 @@ int sdl_main(int argc, char* argv[]) {
           Draw4K(surface,gRenderer,1);
           Draw4K(surface,gRenderer,2);
           nowpicID=-1;
+          picSN_FreeMode = 0; 
         }
         else {
           if (mouse_x >= img_rect.x && mouse_x <= img_rect.x + img_rect.w &&
@@ -1197,6 +1416,9 @@ int sdl_main(int argc, char* argv[]) {
                   ptClick.x,ptClick.y,nowpicID,picSN[nowpicID]); 
                 if(picSN_FreeMode>0) {
                   putPoint_FreeMode(ptClick.x, ptClick.y);
+                  if(picSN_FreeMode==picSN[nowpicID]) {
+                    putPoint(nowpicID, ptClick.x, ptClick.y);
+                  } 
                 }
                 else {
                   putPoint(nowpicID, ptClick.x, ptClick.y);
@@ -1211,18 +1433,24 @@ int sdl_main(int argc, char* argv[]) {
             else {
               if(rightclickcount==1) {
                 ptClickn=-1;
-                for(i=0;i<nPt[nowpicID];i++) {
-                  if(picSN_FreeMode>0) {
+                if(picSN_FreeMode>0) {
+                  for(i=0;i<nPt_FreeMode;i++) {
                     dx = x-pt_FreeMode[i].x;
                     dy = y-pt_FreeMode[i].y;
+                    if(sqrt(dx*dx+dy*dy)<=7) {
+                      ptClickn=i;
+                      break;
+                    }
                   }
-                  else {
+                }
+                else {
+                  for(i=0;i<nPt[nowpicID];i++) {
                     dx = x-pt[nowpicID][i].x;
                     dy = y-pt[nowpicID][i].y;
-                  }
-                  if(sqrt(dx*dx+dy*dy)<=7) {
-                    ptClickn=i;
-                    break;
+                    if(sqrt(dx*dx+dy*dy)<=7) {
+                      ptClickn=i;
+                      break;
+                    }
                   }
                 }
                 printf("%3d,Click point %d,(%d,%d),(%d,%d))\n",__LINE__,
@@ -1234,18 +1462,24 @@ int sdl_main(int argc, char* argv[]) {
                 int ptClickn2=-1;
                 char buffer[MAX_LINE_LENGTH];
                 char ptfname[256];
-                for(i=0;i<nPt[nowpicID];i++) {
-                  if(picSN_FreeMode>0) {
+                if(nPt_FreeMode>0) {
+                  for(i=0;i<nPt_FreeMode;i++) {
                     dx = x-pt_FreeMode[i].x;
                     dy = y-pt_FreeMode[i].y;
+                    if(sqrt(dx*dx+dy*dy)<=7) {
+                      ptClickn2=i;
+                      break;
+                    }
                   }
-                  else {
+                }
+                else { 
+                  for(i=0;i<nPt[nowpicID];i++) {
                     dx = x-pt[nowpicID][i].x;
                     dy = y-pt[nowpicID][i].y;
-                  }
-                  if(sqrt(dx*dx+dy*dy)<=7) {
-                    ptClickn2=i;
-                    break;
+                    if(sqrt(dx*dx+dy*dy)<=7) {
+                      ptClickn2=i;
+                      break;
+                    }
                   }
                 }
                 printf("%3d,Click point (%d,%d),(%d,%d),(%d,%d))\n",__LINE__,
@@ -1255,7 +1489,7 @@ int sdl_main(int argc, char* argv[]) {
                 if(ptClickn2>=0 && ptClickn2==ptClickn) {
                   if(picSN_FreeMode>0) {
                     if(ptClickn2<nPt_FreeMode-1) {                 
-                      for(i=ptClickn2;i<nPt[nowpicID]-1;i++) {
+                      for(i=ptClickn2;i<nPt_FreeMode-1;i++) {
                         if(picSN_FreeMode>0) {
                           pt_FreeMode[i].x=pt_FreeMode[i+1].x;
                           pt_FreeMode[i].y=pt_FreeMode[i+1].y;
@@ -1263,7 +1497,7 @@ int sdl_main(int argc, char* argv[]) {
                       } 
                     }
                     nPt_FreeMode=nPt_FreeMode-1;
-                    sprintf(ptfname,"%s/point%d.txt",fDirectory,picSN_FreeMode);   
+                    sprintf(ptfname,"%s/point%04d.txt",fDirectory,picSN_FreeMode);   
                     ptFile = fopen(ptfname,"wt");
                     for(i=0;i<nPt_FreeMode;i++) {
                       sprintf(buffer,"%d,%d\n", pt_FreeMode[i].x, pt_FreeMode[i].y);
@@ -1279,7 +1513,7 @@ int sdl_main(int argc, char* argv[]) {
                       }
                     }
                     nPt[nowpicID]=nPt[nowpicID]-1;
-                    sprintf(ptfname,"%s/point%d.txt",fDirectory,picSN[nowpicID]);   
+                    sprintf(ptfname,"%s/ooint%04d.txt",fDirectory,picSN[nowpicID]);   
                     ptFile = fopen(ptfname,"wt");
                     for(i=0;i<nPt[nowpicID];i++) {
                       sprintf(buffer,"%d,%d\n", pt[nowpicID][i].x, pt[nowpicID][i].y);
@@ -1299,9 +1533,14 @@ int sdl_main(int argc, char* argv[]) {
            &&img_rect.y<=0 && (img_rect.y+img_rect.h)>=0 ) {
           srcRect.x = -img_rect.x;
           srcRect.y = -img_rect.y;
+          if(srcRect.x!=srcPt.x ||srcRect.y!=srcPt.y) {
+            srcPt.x=srcRect.x;
+            srcPt.y=srcRect.y;
+            putData();
+          }
         //srcRect.w = img_rect.w;
         //srcRect.h = img_rect.h;
-          zoomFactorX = 18;
+          zoomFactorX = 54;
           zoomFactorY = 32;
 #ifdef DEBUG
           printf("%d,sx=%4d,sy=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
@@ -1336,6 +1575,7 @@ int sdl_main(int argc, char* argv[]) {
       getframe(argv[1], frame_index);
       snprintf(imgbuf, sizeof(imgbuf), "img/x%03d.jpg",frame_index); 
       surface = IMG_Load(imgbuf);
+
       texture = SDL_CreateTextureFromSurface(gRenderer, surface);          
     }
 
@@ -1353,7 +1593,22 @@ int sdl_main(int argc, char* argv[]) {
       }
     }
     else { 
-      SDL_RenderCopy(gRenderer, texture, NULL, &img_rect);
+      if (scaleTexture) {
+//        printf("%d >==(%4d,%4d,%4d,%4d),(%4d,%4d,%4d,%4d)==<\n",__LINE__,
+//              jpgRects.x,jpgRects.y,jpgRects.w,jpgRects.h,
+//              img_rect.x,img_rect.y,img_rect.w,img_rect.h
+//              ); 
+#if 1
+        jpgRects.w = 2160*2;
+        jpgRects.h = 3840*2;
+        img_rect.w = 2160*2;
+        img_rect.h = 3840*2;
+#endif
+        SDL_RenderCopy(gRenderer, scaleTexture, &jpgRects, &img_rect);
+      }
+      else {
+        SDL_RenderCopy(gRenderer, texture, NULL, &img_rect);
+      }          
     }      
     if (myButton[0].isPressed) {
       SDL_SetRenderDrawColor(gRenderer, 46, 204, 113, 255); // Green click accent
@@ -1440,14 +1695,7 @@ int sdl_main(int argc, char* argv[]) {
     finalTick = SDL_GetTicks();
 	if( renderText || (finalTick-startTick)>2000)
 	{
-      std::string inputTexts;
-	  //Text is not empty
-	  if( inputText != "" ) {
-        inputTexts = inputText+cursors[cursorn];
-      }
-      else {
-        inputTexts = " "+cursors[cursorn];
-      }  
+      std::string inputTexts= inputText+cursors[cursorn];
 	  //Render new text
 	  gInputTextTexture.loadFromRenderedText( inputTexts.c_str(), textColor );
       gPromptTextTexture.loadFromRenderedText( PromptText.c_str(), textColor );
@@ -1467,6 +1715,41 @@ int sdl_main(int argc, char* argv[]) {
 
     SDL_RenderCopy(gRenderer, Message, NULL, &Message_rect);
     SDL_RenderPresent(gRenderer);
+
+    // Rendering popup window (Red)
+    //SDL_SetRenderDrawColor(popupRenderer, 255, 0, 0, 255);
+    //SDL_RenderClear(popupRenderer);
+    //SDL_RenderPresent(popupRenderer);
+        // Clear screen
+        SDL_SetRenderDrawColor(popupRenderer, 240, 240, 240, 255);
+        SDL_RenderClear(popupRenderer);
+        // Draw listbox background
+        SDL_SetRenderDrawColor(popupRenderer, 255, 255, 255, 255);
+        SDL_RenderFillRect(popupRenderer, &listboxRect);
+        SDL_SetRenderDrawColor(popupRenderer, 180, 180, 180, 255);
+        SDL_RenderDrawRect(popupRenderer, &listboxRect);
+        // Draw items
+        for (size_t i = 0; i < items.size(); ++i) {
+            SDL_Rect itemRect = {listboxRect.x, listboxRect.y + (int)i * itemHeight, listboxRect.w, itemHeight};
+
+            // Highlight selected item
+            if ((int)i == selectedIndex) {
+                SDL_SetRenderDrawColor(popupRenderer, 51, 153, 255, 255);
+                SDL_RenderFillRect(popupRenderer, &itemRect);
+            }
+
+            // Render text
+            SDL_Color textColor = ((int)i == selectedIndex) ? SDL_Color{255, 255, 255, 255} : SDL_Color{0, 0, 0, 255};
+            SDL_Surface* surf = TTF_RenderText_Blended(gFont, items[i].c_str(), textColor);
+            if (surf) {
+                SDL_Texture* tex = SDL_CreateTextureFromSurface(popupRenderer, surf);
+                SDL_Rect destRect = {itemRect.x + 8, itemRect.y + (itemHeight - surf->h) / 2, surf->w, surf->h};
+                SDL_RenderCopy(popupRenderer, tex, NULL, &destRect);
+                SDL_DestroyTexture(tex);
+                SDL_FreeSurface(surf);
+            }
+        }
+        SDL_RenderPresent(popupRenderer);
   }
 //LOOPexit:
   //Clean up
@@ -1475,24 +1758,30 @@ int sdl_main(int argc, char* argv[]) {
   SDL_DestroyTexture(texture);
   SDL_DestroyRenderer(gRenderer);
   SDL_DestroyWindow(gWindow);
+  SDL_DestroyRenderer(popupRenderer);
+  SDL_DestroyWindow(popupWindow);
   IMG_Quit();
   SDL_Quit();
+  TTF_CloseFont(gFont);
   TTF_Quit();
 
   return 0;
 }
 //using SDL put text save to jpg
 void generateTXT(void) {
+#define txtw_width2  2160
+#define txtw_height2 3840
+
   SDL_Rect img_rect2;
   img_rect2.x    = 0;
   img_rect2.y    = 0;
-  img_rect2.w    = width;
+  img_rect2.w    = txtw_width2;
   img_rect2.h    = height;
   char fname[256];
   int frame_index=0;
   //Create a hidden window & 4K software renderer
-  //SDL_Window* window2 = SDL_CreateWindow("4K Circle", 0, 0, width, height, SDL_WINDOW_HIDDEN);
-  SDL_Window* window2 = SDL_CreateWindow("4K Circle", 0, 0, width, height, SDL_WINDOW_SHOWN);
+  //SDL_Window* window2 = SDL_CreateWindow("4K Circle", 0, 0, txtw_width2, txtw_height2, SDL_WINDOW_HIDDEN);
+  SDL_Window* window2 = SDL_CreateWindow("4K Circle", 0, 0, txtw_width2, txtw_height2, SDL_WINDOW_SHOWN);
   SDL_Renderer* renderer2 = SDL_CreateRenderer(window2, -1, SDL_RENDERER_SOFTWARE);
   SDL_Surface* surface3;
   SDL_Texture* texture2;
@@ -1517,10 +1806,15 @@ void generateTXT(void) {
 //wprintf(L"[%s]中\n",MyString);
 //as TTF_RenderText_Solid could only be used on
 //SDL_Surface then you have to create the surface first
+  TTF_CloseFont(gFont);
+  gFont = TTF_OpenFont("m.ttf", 144);
+  TTF_SetFontStyle(gFont, TTF_STYLE_BOLD);
   SDL_Surface* surfaceMessage =
 //TTF_RenderText_Solid(gFont, "arithai.com v1.1!", White); 
 //TTF_RenderText_Blended(gFont, "arithai.com 葉綠素生技 v1.1!", White);
   TTF_RenderUNICODE_Blended(gFont, PrintMyString, Red);
+  TTF_CloseFont(gFont);
+  gFont = TTF_OpenFont("m.ttf", 24);
 //TTF_RenderUNICODE_Solid( gFont, PrintMyString, White );
 //now you can convert it into a texture
   SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer2, surfaceMessage);
@@ -1593,7 +1887,7 @@ void generateTXT(void) {
     //stbi_write_jpg("output_4k.jpg", width, height, 4, pixels.data(), 90);
     sprintf(ptfname,"%s/y%04d.jpg",fDirectory,frame_index);  
     //stbi_write_jpg(ptfname, width, height, 4, pixels.data(), 90);
-    stbi_write_jpg(ptfname, width, height, 4, pixels2.data(), 90);
+    stbi_write_jpg(ptfname, txtw_width2, txtw_height2, 4, pixels2.data(), 90);
   }  
 //SDL_UnlockSurface(surface);
 //Clean up

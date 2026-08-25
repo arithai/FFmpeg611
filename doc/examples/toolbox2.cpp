@@ -720,7 +720,7 @@ void fill_yuv_image(AVFrame *pict, int frame_index,
     
 }
 
-int savePicture(AVFrame *pFrame, char *out_name) {
+int savePicture(AVFrame *pFrame, const char *out_name) {
 //printf("%s(%4d) %X\n",__FILE__,__LINE__,pFrame);
   int width = pFrame->width;
   int height = pFrame->height;
@@ -890,7 +890,7 @@ AVFrame *getvideoframe(OutputStream *ost)
     ost->frame->pts = ost->next_pts++;
     return ost->frame;
 }
-int savePicture(AVFrame *pFrame, char *out_name);
+int savePicture(AVFrame *pFrame, const char *out_name);
 static int writeframejpg(AVFormatContext *fmt_ctx, AVCodecContext *c,
                          AVStream *st, AVFrame *frame, AVPacket *pkt,int frame_index)
 {
@@ -1466,25 +1466,55 @@ void freeAll(void) {
   codec_ctx = NULL;
   format_ctx = NULL;
 }
-void testToolBox2(int x,int y) {
-  int x0=x;
-  int y0=y;
+#define ALGORITHM0 0
+void testToolBox2(const char*fname,const char *fDirectory,int x,int y) {
+  int x0=x,x2;
+  int y0=y,y2;
+#if ALGORITHM0
+  int Y0,U0,V0,Y1,U1,V1;
+  int R0,G0,B0,R1,G1,B1;
+#else
   int Y0;
+#endif
+  char tfname[256];
   freeAll();
-  AVFrame *aframe=getFrame("../VID20260802132623/x0095.jpg");
+  AVFrame *aframe=getFrame(fname);
   printf("%s(%4d)\n",__FILE__,__LINE__);
+  x2 = x0/2;
+  y2 = y0/2;
+#if ALGORITHM0
   Y0=frame->data[0][y0 * frame->linesize[0] + x0];
+  U0 = aframe->data[1][y2 * aframe->linesize[1] + x2];
+  V0 = aframe->data[1][y2 * aframe->linesize[1] + x2];
+  R0 = YUV2R(Y0, U0, V0);
+  G0 = YUV2G(Y0, U0, V0);
+  B0 = YUV2B(Y0, U0, V0);
+#else
+  Y0=frame->data[0][y0 * frame->linesize[0] + x0];
+#endif
   for (y = 0; y < codec_ctx->height; y++) {
+    y2 = y/2;
     for (x = 0; x < codec_ctx->width; x++) {
-      if( abs(frame->data[0][y * frame->linesize[0] + x]-Y0) > 20 )
-      {
-        frame->data[0][y * frame->linesize[0] + x]     = BLACKY;
-        frame->data[1][y/2 * frame->linesize[1] + x/2] = BLACKU;
-        frame->data[2][y/2 * frame->linesize[2] + x/2] = BLACKV; 
+      x2 = x/2;
+#if ALGORITHM0
+      Y1 = aframe->data[0][y * aframe->linesize[0] + x];
+      U1 = aframe->data[1][y2 * aframe->linesize[1] + x2];
+      V1 = aframe->data[1][y2 * aframe->linesize[1] + x2];
+      R1 = YUV2R(Y1, U1, V1);
+      G1 = YUV2G(Y1, U1, V1);
+      B1 = YUV2B(Y1, U1, V1);
+      if( abs(R1-R0)+abs(G1-G0)+abs(B1-B0) > 100 )  {
+#else
+      if( abs(aframe->data[0][y * aframe->linesize[0] + x]-Y0) > 20 ) {
+#endif
+        aframe->data[0][y * aframe->linesize[0] + x]   = BLACKY;
+        aframe->data[1][y2 * aframe->linesize[1] + x2] = BLACKU;
+        aframe->data[2][y2 * aframe->linesize[2] + x2] = BLACKV; 
       }  
     }
   }
-  savePicture(aframe, (char*)"../VID20260802132623/tmp.jpg");
+  sprintf(tfname,"%s/tmp.jpg",fDirectory);
+  savePicture(aframe, tfname);
   aframe=aframe;
 }
 void getYUV(int frame_index,int x,int y,int *Y,int *U,int *V) {
@@ -1778,6 +1808,7 @@ end:
   addstream(&video_st, oc, &video_codec, fmt->video_codec,dec_ctx);
   openvideo(oc, video_codec, &video_st, opt);
 
+
   strcpy(filename,"output.mp4");
   av_dump_format(oc, 0, filename, 1);
   //open the output file, if needed
@@ -1834,7 +1865,6 @@ end:
 #if 1
           printf("%s(%d) %lld\n",__FILE__,__LINE__,video_st.next_pts);
           encode_video = !write_video_frame(oc, &video_st, path, cprefix);
-        //copyFramebefore();
 #endif
 //        av_frame_unref(filt_frame);
         }
@@ -1874,3 +1904,11 @@ end:
   return 1;
 }
 
+void callext(const char *exename) {
+//Launch an external program (e.g., notepad.exe or calc.exe) via system call
+  printf("%s(%d) Launching external executable...\n",__FILE__,__LINE__);
+  int result = std::system(exename); 
+  if (result != 0) {
+    printf("%s(%d) %d,External command failed or returned non-zero.\n",__FILE__,__LINE__,result);
+  }
+}

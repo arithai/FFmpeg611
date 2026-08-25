@@ -1,4 +1,21 @@
 
+20260825
+VID20260825123112
+ffmpeg -i VID20260825123112.mp4 VID20260825123112/x%04d.jpg
+
+
+20260818
+ffmpeg -i VID20260815085027.mp4 -vf "transpose=1" -metadata:s:v:0 rotate=0 -c:a copy output.mp4
+
+ffmpeg -i VID20260815085027.mp4 VID20260815085027/x%04d.jpg
+
+20260813
+ffmpeg -stream_loop -1 -i output.mp4 -i a.mp3 -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -shortest output2.mp4
+
+ffmpeg -i output.mp4 -i a.mp3 -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 output2.mp4
+ffmpeg -i output.mp4 -i a.mp3 -map 0:v -map 1:a -c:v copy -c:a copy output2.mp4 -y
+ffmpeg -i output.mp4 -i a.mp3 -c:v copy -c output2.mp4 -y
+
 20260723
 http://arithai.onlinewebshop.net/
 
@@ -408,13 +425,11 @@ usage: ffmpeg [options] [[infile options] -i infile]... {[outfile options] outfi
 
 
 https://github.com/livepeer/FFmpeg-6.1.1.git
-
-ffmpeg -i VID20260802132623.mp4 VID20260802132623/x%04d.jpg
+VID20260825123112
 ffmpeg -i VID20260611082732.mp4 VID20260611082732/x%04d.jpg
 ffmpeg -i VID20260503072852.mp4 VID20260503072852/x%04d.jpg
 ffmpeg -i input.mp4 output_%03d.jpeg
 
-ffmpeg -i VID20260503072852.mp4 -c copy -metadata:s:v:0 rotate=90 output.mp4
 ffmpeg -i VID20260503072852.mp4 -vf "transpose=1" -metadata:s:v:0 rotate=0 -c:a copy output.mp4
 ./dfvmux3diff VID20260802131520.mp4 VID20260802131520_r1.mp4
 

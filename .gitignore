@@ -26,16 +26,6 @@
 *.ptx.c
 *.ptx.gz
 *_g
-*.jpg
-point*.txt
-*.mp4
-SDLmain.cpp
-toolbox2.cpp
-act2.cpp
-act2.h
-matrix.cpp
-matrix.h
-Makefile.act
 \#*
 .\#*
 /.config
@@ -51,3 +41,6 @@ Makefile.act
 /src
 /mapfile
 /tools/python/__pycache__/
+*.jpg
+*.mp4
+point*.txt
