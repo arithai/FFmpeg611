@@ -1017,7 +1017,8 @@ struct FullPivLU {
 //BLUE B:before E:End
 bool computeFullPivLU(
   const matrix_t *A, matrix_t *L,matrix_t *U,
-  int *B,int *E, double epsilon = 1e-12) {
+  int *B,int *E) {
+  double epsilon = 1e-12;
   int n = A->rows; //=A=cols=3
   int tmp;
   matrix_t *LU = matrix_copy((matrix_t *)A);   
@@ -1245,51 +1246,4 @@ matrix_t *computeBM_from_BLUE4(matrix_t *L,matrix_t *U,int *B,int *E,
   m->data[2][2]=v03->data[2];m->data[2][3]=v03->data[3];
   return m;
 }
-void BLUE3x4(void) {
-  //u1->v1 u2->v2 u3->v3
-  vector_t *u1=ivector4_new(  3,  6,  2,  1.0);
-  vector_t *u2=ivector4_new(  1,  0,  1,  1.0);
-  vector_t *u3=ivector4_new(  0,  1,  1,  1.0);
-  vector_t *u4=ivector4_new(  0,  0,  3,  1.0);
-  vector_t *v1=ivector3_new(  1,  0,  1.0);  
-  vector_t *v2=ivector3_new(  1,  2,  1.0);  
-  vector_t *v3=ivector3_new(  0,  3,  1.0);  
-  vector_t *v4=ivector3_new(  1,  1,  1.0);  
-  matrix_t *A=(matrix_t *)matrix_new(4, 4);
-  matrix_t *L=(matrix_t *)matrix_new(4, 4);
-  matrix_t *U=(matrix_t *)matrix_new(4, 4);
-  int B[4],E[4];
-  A->data[0][0]=u1->data[0];A->data[0][1]=u1->data[1];
-  A->data[0][2]=u1->data[2];A->data[0][3]=u1->data[3];
-  A->data[1][0]=u2->data[0];A->data[1][1]=u2->data[1];
-  A->data[1][2]=u2->data[2];A->data[1][3]=u2->data[3];
-  A->data[2][0]=u3->data[0];A->data[2][1]=u3->data[1];
-  A->data[2][2]=u3->data[2];A->data[2][3]=u3->data[3];
-  A->data[3][0]=u4->data[0];A->data[3][1]=u4->data[1];
-  A->data[3][2]=u4->data[2];A->data[3][3]=u4->data[3]; 
-test 2026.08.26,0045
-  printf("A ");matrix_print(A);
-  bool isSingular = computeFullPivLU(A,L,U,B,E);
-  printf("B=%3d,%3d,%3d,%3d\n",B[0],B[1],B[2],B[3]);
-  printf("E=%3d,%3d,%3d,%3d\n",E[0],E[1],E[2],E[3]); 
-  printf("Is Singular: %s\n",isSingular ? "YES" : "NO");  
-  matrix_t *BB=(matrix_t *)matrix_from_row_perm4(B);
-  matrix_t *EE=(matrix_t *)matrix_from_col_perm4(E);
-//test
-  matrix_t *LxU=(matrix_t *)matrix_dot(L,U);
-//printf("LxU ");matrix_print(LxU);
-//printf("EE ");matrix_print(EE);
-  matrix_t *LxU1=(matrix_t *)matrix_dot(LxU,EE);
-//printf("LxU1 ");matrix_print(LxU1);
-  matrix_t *LxU2=(matrix_t *)matrix_dot(BB,LxU1);
-  printf("LxU2 ");matrix_print(LxU2);
-  matrix_t *LxU3=matrix_invert(LxU2);
-  printf("LxU3 ");matrix_print(LxU3);
-  printf("L ");matrix_print(L);
-  printf("U ");matrix_print(U);
-  matrix_t *BM=computeBM_from_BLUE4(L,U,B,E,v1,v2,v3,v4);
-  printf("BM ");matrix_print(BM);
-  vector_t *va1=matrix_mult_vector(BM,u4);
-  printf("va1 ");vector_print(va1);
-  printf("BLUE3x4\n");
-}
+

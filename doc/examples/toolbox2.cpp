@@ -1479,7 +1479,7 @@ void testToolBox2(const char*fname,const char *fDirectory,int x,int y) {
   char tfname[256];
   freeAll();
   AVFrame *aframe=getFrame(fname);
-  printf("%s(%4d)\n",__FILE__,__LINE__);
+  printf("%s(%4d)(%4d,%4d)\n",__FILE__,__LINE__,x,y);
   x2 = x0/2;
   y2 = y0/2;
 #if ALGORITHM0

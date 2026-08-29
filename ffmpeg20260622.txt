@@ -1,4 +1,9 @@
 
+20260828
+$ /usr/sbin/apachectl restart
+httpd not running, trying to start
+
+
 20260825
 VID20260825123112
 ffmpeg -i VID20260825123112.mp4 VID20260825123112/x%04d.jpg

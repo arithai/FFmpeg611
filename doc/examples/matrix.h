@@ -108,6 +108,7 @@ matrix_t *matrix_invert(matrix_t *m1);
 //Image 
 vector_t *ivector_new(double u1,double u2);
 vector_t *ivector3_new(double x1,double x2,double x3);
+vector_t *ivector4_new(double x1,double x2,double x3,double x4);
 vector_t *ivector6_new(double x1,double x2,double x3,
                        double x4,double x5,double x6);
 matrix_t *matrix_from_vectors(vector_t *u1,vector_t *u2);
@@ -126,3 +127,12 @@ matrix_t *computeBM_from_UV(vector_t *u1,vector_t *u2,vector_t *u3,
 
 //Algebraic Projective Geometry
 int lr_main();
+bool computeFullPivLU(
+  const matrix_t *A, matrix_t *L,matrix_t *U,
+  int *B,int *E);
+matrix_t *matrix_from_row_perm4(int D[4]);
+matrix_t *matrix_from_col_perm4(int D[4]);
+void row_perm_vector4(int D[4],vector_t *v);
+void col_perm_vector4(int D[4],vector_t *v);
+matrix_t *computeBM_from_BLUE4(matrix_t *L,matrix_t *U,int *B,int *E,
+  vector_t *v1,vector_t *v2,vector_t *v3,vector_t *v4);

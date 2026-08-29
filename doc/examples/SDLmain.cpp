@@ -32,6 +32,7 @@ SDL_Point pt[3][20];
 
 SDL_Point ptClick;
 SDL_Point predictClick;
+SDL_Point predictClicks[2];
 int ptClickn=-1;
 int nPt[3];
 FILE *ptFile=NULL;
@@ -45,7 +46,12 @@ SDL_Point pt_FreeMode[20];
 int nPt_FreeMode=0;
 char buffer[MAX_LINE_LENGTH];
 SDL_Point srcPt = {-1, -1};
-void initfDirectory(void) {
+int zoomFactor = 20; //3..30 / 20, 20/20 original
+#define getW(sW) (static_cast<int>((sW) * zoomFactor/20.0))
+#define getH(sH) (static_cast<int>((sH) * zoomFactor/20.0))
+#define getw(sW) (static_cast<int>((sW) * 20.0/zoomFactor))
+#define geth(sH) (static_cast<int>((sH) * 20.0/zoomFactor))
+void initData(void) {
   int len,coor;
   int iline;
   strcpy(ptfname,"data.txt"); 
@@ -73,12 +79,17 @@ void initfDirectory(void) {
           break;
         case 1:
           coor=atoi(buffer);
-          if(coor>0) srcPt.x=coor;
+          srcPt.x=coor;
           iline++;
           break; 
         case 2:
           coor=atoi(buffer);
-          if(coor>0) srcPt.y=coor;
+          srcPt.y=coor;
+          iline++;
+          break; 
+        case 3:
+          zoomFactor=atoi(buffer);
+          if(zoomFactor<3 || zoomFactor>30) zoomFactor=20;
           iline++;
           break; 
         default:
@@ -88,17 +99,7 @@ void initfDirectory(void) {
     if(ptFile!=NULL) fclose(ptFile); 
     ptFile=NULL;
   }
-  printf("%d,srcPt=(%d,%d)\n",__LINE__,srcPt.x,srcPt.y);
-}
-void putfDirectory(void) {
-  strcpy(ptfname,"data.txt"); 
-  ptFile = fopen(ptfname,"wt");
-  fprintf(ptFile, "%s\n",fDirectory);
-  fprintf(ptFile, "%d\n",srcPt.x);
-  fprintf(ptFile, "%d\n",srcPt.y);
-  if(ptFile!=NULL) fclose(ptFile); 
-  ptFile=NULL;
-  printf("%d,srcPt=(%d,%d)\n",__LINE__,srcPt.x,srcPt.y);
+  printf("%d,%2d,srcPt=(%4d,%4d)\n",__LINE__,zoomFactor,srcPt.x,srcPt.y);
 }
 void putData(void) {
   strcpy(ptfname,"data.txt"); 
@@ -106,9 +107,10 @@ void putData(void) {
   fprintf(ptFile,"%s\n",fDirectory);
   fprintf(ptFile,"%d\n",srcPt.x);
   fprintf(ptFile,"%d\n",srcPt.y);
+  fprintf(ptFile,"%d\n",zoomFactor);
   if(ptFile!=NULL) fclose(ptFile); 
   ptFile=NULL;
-  printf("%d,srcPt=(%d,%d)\n",__LINE__,srcPt.x,srcPt.y);
+  printf("%d,%2d,srcPt=(%4d,%4d)\n",__LINE__,zoomFactor,srcPt.x,srcPt.y);
 }
 void initpicSN(void) {
   int i,x,j;
@@ -233,35 +235,35 @@ int putPoint(int picID,int x,int y) {
 }
 int nowpicID=0;
 void DrawCircle(SDL_Renderer *renderer, int32_t centreX, int32_t centreY, int32_t radius) {
-    const int32_t diameter = (radius * 2);
-    int32_t x = (radius - 1);
-    int32_t y = 0;
-    int32_t tx = 1;
-    int32_t ty = 1;
-    int32_t error = (tx - diameter);
+  const int32_t diameter = (radius * 2);
+  int32_t x = (radius - 1);
+  int32_t y = 0;
+  int32_t tx = 1;
+  int32_t ty = 1;
+  int32_t error = (tx - diameter);
 
-    while (x >= y) {
-        //  Each of the following renders an octant of the circle
-        SDL_RenderDrawPoint(renderer, centreX + x, centreY - y);
-        SDL_RenderDrawPoint(renderer, centreX + x, centreY + y);
-        SDL_RenderDrawPoint(renderer, centreX - x, centreY - y);
-        SDL_RenderDrawPoint(renderer, centreX - x, centreY + y);
-        SDL_RenderDrawPoint(renderer, centreX + y, centreY - x);
-        SDL_RenderDrawPoint(renderer, centreX + y, centreY + x);
-        SDL_RenderDrawPoint(renderer, centreX - y, centreY - x);
-        SDL_RenderDrawPoint(renderer, centreX - y, centreY + x);
+  while (x >= y) {
+  //  Each of the following renders an octant of the circle
+    SDL_RenderDrawPoint(renderer, centreX + x, centreY - y);
+    SDL_RenderDrawPoint(renderer, centreX + x, centreY + y);
+    SDL_RenderDrawPoint(renderer, centreX - x, centreY - y);
+    SDL_RenderDrawPoint(renderer, centreX - x, centreY + y);
+    SDL_RenderDrawPoint(renderer, centreX + y, centreY - x);
+    SDL_RenderDrawPoint(renderer, centreX + y, centreY + x);
+    SDL_RenderDrawPoint(renderer, centreX - y, centreY - x);
+    SDL_RenderDrawPoint(renderer, centreX - y, centreY + x);
 
-        if (error <= 0) {
-            ++y;
-            error += ty;
-            ty += 2;
-        }
-        if (error > 0) {
-            --x;
-            tx += 2;
-            error += (tx - diameter);
-        }
+    if (error <= 0) {
+      ++y;
+      error += ty;
+      ty += 2;
     }
+    if (error > 0) {
+      --x;
+      tx += 2;
+      error += (tx - diameter);
+    }
+  }
 }
 void initPoint_FreeMode(void) {
   char coor[6];
@@ -339,8 +341,8 @@ Button myButton[6]= { { {  40, 50, 40, 40 }, false, "" },
                       { { 240, 50, 40, 40 }, false, "" },
                       { { 290, 50, 40, 40 }, false, "" },
                     };
-const int width  = 2160;
-const int height = 3840;
+const int mp4width  = 2160;
+const int mp4height = 3840;
 //Screen dimension constants
 const int SCREEN_WIDTH = 972;
 const int SCREEN_HEIGHT = 576;
@@ -349,21 +351,17 @@ SDL_Rect jpgRects   = {0, 0, 2160, 3840}; //scale
 // Set up source rectangle (e.g., cropping a 400x300 chunk starting at x=50, y=50)
 //SDL_Rect srcRect = {1200, 1000, 1056, 594};
 SDL_Rect srcRect   = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
-// Set up destination rectangle (same size for true 1:1 "real" size)
-SDL_Rect srcMRect  = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
-SDL_Rect destRect  = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT}; 
-SDL_Rect destMRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT}; 
 
 void Draw4K(SDL_Surface* surface,SDL_Renderer* renderer0, int yid) {
     SDL_Rect img_rect2;
     img_rect2.x    = 0;
     img_rect2.y    = 0;
-    img_rect2.w    = width;
-    img_rect2.h    = height;
+    img_rect2.w    = mp4width;
+    img_rect2.h    = mp4height;
     // Create a hidden window & 4K software renderer
     SDL_Surface* surface3 = IMG_Load(myButton[yid].fstr);
-//  SDL_Window* window2 = SDL_CreateWindow("4K Circle", 0, 0, width, height, SDL_WINDOW_HIDDEN);
-    SDL_Window* window2 = SDL_CreateWindow("4K Circle", 0, 0, width, height, SDL_WINDOW_SHOWN);
+//  SDL_Window* window2 = SDL_CreateWindow("4K Circle", 0, 0, mp4width, mp4height, SDL_WINDOW_HIDDEN);
+    SDL_Window* window2 = SDL_CreateWindow("4K Circle", 0, 0, mp4width, mp4height, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer2 = SDL_CreateRenderer(window2, -1, SDL_RENDERER_SOFTWARE);
     SDL_Texture* texture2 = SDL_CreateTextureFromSurface(renderer2, surface3);
     SDL_Surface* surface2 = SDL_ConvertSurfaceFormat(surface3, SDL_PIXELFORMAT_ARGB8888, 0);
@@ -401,9 +399,9 @@ void Draw4K(SDL_Surface* surface,SDL_Renderer* renderer0, int yid) {
 //  SDL_RenderReadPixels(renderer2, NULL, surface5->format->format, surface5->pixels, surface5->pitch);
 
     // Allocate buffer for 4K pixels
-//  std::vector<Uint32> pixels(width * height);
+//  std::vector<Uint32> pixels(mp4width * mp4height);
 //  SDL_LockSurface(surface);
-    // Calculate the total size in bytes (pitch * height)
+    // Calculate the total size in bytes (pitch * mp4height)
     // Assuming 32-bit (4 bytes) pixels, we divide by 4 to get the vector size
     size_t pixelCount = (surface2->w * surface2->h) ;
     printf("%d,%lld,%d,%d,%d\n",__LINE__,pixelCount,surface2->pitch,surface2->h,surface2->w);  
@@ -420,8 +418,8 @@ void Draw4K(SDL_Surface* surface,SDL_Renderer* renderer0, int yid) {
     // Save as 4K JPG (quality: 90)
 //  stbi_write_jpg("output_4k.jpg", width, height, 4, pixels.data(), 90);
     sprintf(ptfname,"%s/y%04d.jpg",fDirectory,yid);  
-//  stbi_write_jpg(ptfname, width, height, 4, pixels.data(), 90);
-    stbi_write_jpg(ptfname, width, height, 4, pixels2.data(), 90);
+//  stbi_write_jpg(ptfname, mp4width, mp4height, 4, pixels.data(), 90);
+    stbi_write_jpg(ptfname, mp4width, mp4height, 4, pixels2.data(), 90);
 //  SDL_UnlockSurface(surface);
 
     // Clean up
@@ -637,7 +635,7 @@ bool loadMedia()
   return success;
 }
 // Function to duplicate and scale an existing SDL_Texture
-SDL_Texture* DuplicateAndScaleTexture(SDL_Renderer* renderer, SDL_Texture* srcTex, float scaleFactor) {
+SDL_Texture* DuplicateAndScaleTexture(SDL_Renderer* renderer, SDL_Texture* srcTex) {
   Uint32 format;
   int access, srcW, srcH;
   // 1. Get properties of the source texture
@@ -646,8 +644,9 @@ SDL_Texture* DuplicateAndScaleTexture(SDL_Renderer* renderer, SDL_Texture* srcTe
     return nullptr;
   }
   // Calculate new scaled dimensions
-  int destW = static_cast<int>(srcW * scaleFactor);
-  int destH = static_cast<int>(srcH * scaleFactor);
+  int destW = getW(srcW);
+  int destH = getH(srcH);
+  printf("(%4d)(%4d,%4d)(%4d,%4d)\n",__LINE__,srcW,srcH,destW,destH);
   // 2. Backup the current render target so we don't break the main loop
   SDL_Texture* oldTarget = SDL_GetRenderTarget(renderer);
   // 3. Create a new texture with TARGET access to allow rendering onto it
@@ -728,8 +727,10 @@ int sdl_main(int argc, char* argv[]) {
   int selectedIndex = 0;
   SDL_Rect listboxRect = {50, 50, 300, 200};
   int itemHeight = 30;
+  srcPt.x = 0;  srcPt.y = 0;
 Redraw:
-  initfDirectory();
+  SDL_Rect img_rect = {0,0,0,0};
+  initData();
   fDirectory[20]=0;
   printf("Get directory [%s]<======\n",fDirectory);
   for (i=0;i<(int)items.size();i++) {
@@ -747,6 +748,8 @@ Redraw:
     printf("picSN[%4d]=%04d\n",i,picSN[i]);
   }
   predictClick.x=-1;predictClick.y=-1;
+  predictClicks[0].x=-1;predictClicks[0].y=-1;
+  predictClicks[1].x=-1;predictClicks[1].y=-1;
 
   initPoint(0);
 //putPoint(0,7,7);
@@ -767,11 +770,11 @@ Redraw:
     return 1;
   }
 //Convert surface to texture
-  SDL_Rect img_rect;
   SDL_Texture* texture;
   SDL_Texture* scaleTexture = NULL;
 #if 1
   texture  = SDL_CreateTextureFromSurface(gRenderer, surface);
+  scaleTexture = DuplicateAndScaleTexture(gRenderer, texture);
 #else
   SDL_Texture* texture = SDL_CreateTexture(gRenderer, 
       SDL_PIXELFORMAT_RGBA8888, 
@@ -845,17 +848,13 @@ Redraw:
 //to dabble with cropping), and the rect which is the size
 //and coordinate of your texture
 
-  int zoomFactorX = 54; // Pixels to scale per scroll
-  int zoomFactorY = 32; // Pixels to scale per scroll
   int offset_x = 0, offset_y = 0;
   bool is_dragging = false;
-  bool is_zooming = false;
   bool is_ClickingOnly = false;
   bool is_leftclick = false;
   char rightclickcount = 0;
 //Rendering loop 
   int quit = 0;
-  int is_extending = 0;
   SDL_Event e;
   int result = 0;
   char cmd[10]={0};
@@ -873,20 +872,15 @@ Redraw:
   //Enable text input
   SDL_StartTextInput();
 
-  if(srcPt.x>=0 && srcPt.y>=0) {
+//if(srcPt.x>=0 && srcPt.y>=0) 
+  {
      srcRect.x = srcPt.x;
      srcRect.y = srcPt.y;
-     img_rect.x = -srcRect.x;
-     img_rect.y = -srcRect.y;
+     img_rect.x = -srcPt.x;
+     img_rect.y = -srcPt.y;
+//   printf("%4ds(%4d,%4d),s(%4d,%4d),s(%4d,%4d)\n",__LINE__,
+//     srcPt.x,srcPt.y,srcRect.x,srcRect.y,img_rect.x,img_rect.y);
   }
-#if 0
-  myButton[0].isPressed = true;
-  printf("Button 0 Clicked!\n");
-  surface = IMG_Load(myButton[0].fstr);
-  texture = SDL_CreateTextureFromSurface(gRenderer, surface);
-  nowpicID=0;
-  SDL_RenderCopy(gRenderer, texture, &srcRect, &destRect);
-#endif
   picSN_FreeMode=picSN[nowpicID]; //for testToolBox
 
   Uint64 startTick = SDL_GetTicks();
@@ -929,7 +923,7 @@ Redraw:
         if(memcmp(items[selectedIndex].c_str(),&fDirectory[3],17)) {
           memcpy(&fDirectory[3],items[selectedIndex].c_str(),17);
           printf("fDirectory=%s,goto Redraw\n",fDirectory);  
-          putfDirectory();
+          putData();
           goto Redraw;
         }
       }
@@ -1036,8 +1030,8 @@ Redraw:
 			  renderText = true;
             } //show YUV 2026.08.10
             else if(inputText=="test") {
-              int x0=ptClick.x;
-              int y0=ptClick.y;
+              int x0=getw(ptClick.x);
+              int y0=geth(ptClick.y);
               if(ptClick.x<0) x0=0;
               char fname[256];
               if(ptClick.y<0) y0=0;
@@ -1047,6 +1041,7 @@ Redraw:
               sprintf(fname,"%s/tmp.jpg",fDirectory);
               surface = IMG_Load(fname);
               texture = SDL_CreateTextureFromSurface(gRenderer, surface);
+              scaleTexture = DuplicateAndScaleTexture(gRenderer, texture);
               PromptText = "testToolBox2 done!";
               printf("Enter Return pressed![%s](%d,%d))!\n",inputText.c_str(),ptClick.x,ptClick.y);
 			  renderText = true;
@@ -1260,65 +1255,37 @@ Redraw:
       }
       else if (e.type == SDL_MOUSEWHEEL) {
         is_dragging = false;
-        is_zooming = true;
-        is_extending = 0;
       //SDL_QueryTexture(texture, NULL, NULL, &img_rect.w, &img_rect.h);
       //Adjust dimensions on mouse wheel
+        int oldzoomFactor = zoomFactor;
         if (e.wheel.y > 0) { // Scroll Up (Zoom In)
-          destRect.x -= zoomFactorX / 2; // Center the zoom
-          destRect.y -= zoomFactorY / 2;
-          destRect.w += zoomFactorX;
-          destRect.h += zoomFactorY;
+          if(zoomFactor<30) {
+            zoomFactor++;
+          } 
         } else if (e.wheel.y < 0) { // Scroll Down (Zoom Out)
-          destRect.x += zoomFactorX / 2;
-          destRect.y += zoomFactorY / 2;
-          destRect.w -= zoomFactorX;
-          destRect.h -= zoomFactorY;
+          if(zoomFactor>3) {
+            zoomFactor--;
+          } 
         }
-      //srcRect.x = img_rect.x;
-      //srcRect.y = img_rect.y;
-//Remapping if zoom out 2026.7.4,  86.4=576*3/20
-        if(srcRect.x>0 && srcRect.y>0 && destRect.x>0 && destRect.y>0 && destRect.h>48) {
-          printf("**[%4d,%4d,%4d,%4d],z=(%4d,%4d,%4d),s=(%4d,%4d,%4d,%4d),d=(%4d,%4d,%4d,%4d)\n",
-                 img_rect.x, img_rect.y, img_rect.w, img_rect.h,  
-                 zoomFactorX,zoomFactorY,e.wheel.y,
-                 srcRect.x, srcRect.y, srcRect.w, srcRect.h,
-                 destRect.x, destRect.y, destRect.w, destRect.h
-                );
-          srcMRect.x=srcRect.x-srcRect.x*destRect.x/SCREEN_WIDTH;
-          srcMRect.y=srcRect.y-srcRect.y*destRect.y/SCREEN_HEIGHT;
-          srcMRect.w=SCREEN_WIDTH*srcRect.w/destRect.w;
-          srcMRect.h=SCREEN_HEIGHT*srcRect.h/destRect.h;
-          if(srcMRect.h>height) {
-            srcMRect.x=0;
-            srcMRect.y=0;
-            srcMRect.w=width;
-            srcMRect.h=height;
+        if(oldzoomFactor != zoomFactor) {
+          putData();
+#if 1
+          printf("%4d j(%4d,%4d,%4d,%4d)i(%4d,%4d,%4d,%4d)\n",__LINE__,
+             jpgRects.x,jpgRects.y,jpgRects.w,jpgRects.h,
+             img_rect.x,img_rect.y,img_rect.w,img_rect.h);
+#endif     
 
-            destMRect.x=SCREEN_WIDTH/3;
-            destMRect.y=0;
-            destMRect.w=SCREEN_WIDTH/3;
-            destMRect.h=SCREEN_HEIGHT;               
-          }  
-          else {
-            destMRect.x=0;
-            destMRect.y=0;
-            destMRect.w=SCREEN_WIDTH;
-            destMRect.h=SCREEN_HEIGHT;               
-          }
-          is_extending = 1;
-        }
+        } 
+        if(scaleTexture) SDL_DestroyTexture(scaleTexture);
+        scaleTexture=NULL;
+        scaleTexture = DuplicateAndScaleTexture(gRenderer, texture);
         SDL_QueryTexture(texture, NULL, NULL, &img_rect.w, &img_rect.h);
-        printf(">>[%4d,%4d,%4d,%4d],z=(%4d,%4d,%4d),s=(%4d,%4d,%4d,%4d),d=(%4d,%4d,%4d,%4d)\n",
-               img_rect.x, img_rect.y, img_rect.w, img_rect.h,  
-               zoomFactorX, zoomFactorY,e.wheel.y,
-               srcMRect.x, srcMRect.y, srcMRect.w, srcMRect.h,
-               destRect.x, destRect.y, destRect.w, destRect.h
-        );
+        printf(">>z=(%2d,%4d),i[%4d,%4d,%4d,%4d]\n",
+               zoomFactor,e.wheel.y,
+               img_rect.x, img_rect.y, img_rect.w, img_rect.h);
       }
       else if (e.type == SDL_MOUSEBUTTONDOWN) {
         int mouse_x, mouse_y;
-        is_zooming = false;
         is_ClickingOnly = false;
         Uint32 mouseState = SDL_GetMouseState(&mouse_x, &mouse_y);
         if (mouseState & SDL_BUTTON(SDL_BUTTON_LEFT)) {
@@ -1330,7 +1297,7 @@ Redraw:
           is_leftclick = false;
           rightclickcount++;
         }
-        printf("(%4d) mx=%4d,my=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
+        printf("(%4d) m=(%4d,%4d)i(%4d,%4d,%4d,%4d)\n",
                __LINE__,mouse_x, mouse_y,
                img_rect.x,img_rect.y,img_rect.w,img_rect.h);
         if (false) {
@@ -1349,7 +1316,7 @@ Redraw:
           picSN_FreeMode = picSN[nowpicID]; 
           initPoint_FreeMode();
           texture = SDL_CreateTextureFromSurface(gRenderer, surface);          
-          scaleTexture = DuplicateAndScaleTexture(gRenderer, texture, 1);
+          scaleTexture = DuplicateAndScaleTexture(gRenderer, texture);
         }
         else if (isMouseOver(mouse_x, mouse_y, myButton[1].rect)) {
           myButton[1].isPressed = true;
@@ -1359,7 +1326,7 @@ Redraw:
           picSN_FreeMode = picSN[nowpicID]; 
           initPoint_FreeMode();
           texture = SDL_CreateTextureFromSurface(gRenderer, surface);
-          scaleTexture = DuplicateAndScaleTexture(gRenderer, texture, 2);
+          scaleTexture = DuplicateAndScaleTexture(gRenderer, texture);
         //SDL_DestroyTexture(texture);
         }
         else if (isMouseOver(mouse_x, mouse_y, myButton[2].rect)) {
@@ -1370,7 +1337,7 @@ Redraw:
           picSN_FreeMode = picSN[nowpicID]; 
           initPoint_FreeMode();
           texture = SDL_CreateTextureFromSurface(gRenderer, surface);          
-          scaleTexture = DuplicateAndScaleTexture(gRenderer, texture, 2);
+          scaleTexture = DuplicateAndScaleTexture(gRenderer, texture);
         }
         else if (isMouseOver(mouse_x, mouse_y, myButton[3].rect)) {
           myButton[3].isPressed = true;
@@ -1386,19 +1353,22 @@ Redraw:
             is_dragging = true;
             offset_x = mouse_x - img_rect.x;
             offset_y = mouse_y - img_rect.y;
-#ifdef DEBUG
-            printf("%d mx=%4d,my=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
+            printf("%4dm(%4d,%4d),i(%4d,%4d,%4d,%4d),s(%4d,%4d)\n",
                    __LINE__,mouse_x, mouse_y,
-                   img_rect.x,img_rect.y,img_rect.w,img_rect.h);
-#endif
+                   img_rect.x,img_rect.y,img_rect.w,img_rect.h,
+                   srcPt.x,srcPt.y);
           }
           is_ClickingOnly = true;
         }    
       } else if (e.type == SDL_MOUSEBUTTONUP) {
+        int mouse_x, mouse_y;
+        int x,y,dx,dy;
+        SDL_GetMouseState(&mouse_x, &mouse_y);        
+        printf("%4dm(%4d,%4d),i(%4d,%4d,%4d,%4d),c(%4d,%4d)\n",
+               __LINE__,mouse_x, mouse_y,
+               img_rect.x,img_rect.y,img_rect.w,img_rect.h,
+               mouse_x-img_rect.x,mouse_y-img_rect.y);
         if(is_ClickingOnly) {
-          int mouse_x, mouse_y;
-          int x,y,dx,dy;
-          SDL_GetMouseState(&mouse_x, &mouse_y);
           x = mouse_x - img_rect.x;   
           y = mouse_y - img_rect.y;
 
@@ -1412,19 +1382,21 @@ Redraw:
               dx = x-ptClick.x;
               dy = y-ptClick.y;
               if(sqrt(dx*dx+dy*dy)<50) {
-                printf("(%3d) x=%3d,y=%3d,px=%3d,py=%3d,now=%3d,pic=%3d\n",__LINE__,x,y,
-                  ptClick.x,ptClick.y,nowpicID,picSN[nowpicID]); 
+                printf("(%4d)o(%4d,%4d)s(%4d,%4d)p(%4d,%4d),now=%3d,pic=%3d\n",__LINE__,x,y,
+                  srcRect.x,srcRect.y,ptClick.x,ptClick.y,nowpicID,picSN[nowpicID]); 
                 if(picSN_FreeMode>0) {
-                  putPoint_FreeMode(ptClick.x, ptClick.y);
+                  putPoint_FreeMode(getw(ptClick.x), geth(ptClick.y));
                   if(picSN_FreeMode==picSN[nowpicID]) {
-                    putPoint(nowpicID, ptClick.x, ptClick.y);
+                    putPoint(nowpicID, getw(ptClick.x), geth(ptClick.y));
                   } 
                 }
                 else {
-                  putPoint(nowpicID, ptClick.x, ptClick.y);
+                  putPoint(nowpicID, getw(ptClick.x), geth(ptClick.y));
                 }
-                printf("%d Click,%3d,%4d,%4d,%4d,%4d,%4d,%4d\n",__LINE__,nowpicID, mouse_x, mouse_y,
-                     img_rect.x,img_rect.y,img_rect.w,img_rect.h);
+                printf("%4d Click,%3d,m(%4d,%4d),i(%4d,%4d,%4d,%4d),p(%4d,%4d,%4d,%4d)\n",
+                     __LINE__,nowpicID, mouse_x, mouse_y,
+                     img_rect.x,img_rect.y,img_rect.w,img_rect.h,
+                     ptClick.x,ptClick.y,dx,dy);
               }
               else {
                 ptClick.x=x;  ptClick.y=y;
@@ -1435,8 +1407,8 @@ Redraw:
                 ptClickn=-1;
                 if(picSN_FreeMode>0) {
                   for(i=0;i<nPt_FreeMode;i++) {
-                    dx = x-pt_FreeMode[i].x;
-                    dy = y-pt_FreeMode[i].y;
+                    dx = x-getW(pt_FreeMode[i].x);
+                    dy = y-getH(pt_FreeMode[i].y);
                     if(sqrt(dx*dx+dy*dy)<=7) {
                       ptClickn=i;
                       break;
@@ -1445,8 +1417,8 @@ Redraw:
                 }
                 else {
                   for(i=0;i<nPt[nowpicID];i++) {
-                    dx = x-pt[nowpicID][i].x;
-                    dy = y-pt[nowpicID][i].y;
+                    dx = x-getW(pt[nowpicID][i].x);
+                    dy = y-getH(pt[nowpicID][i].y);
                     if(sqrt(dx*dx+dy*dy)<=7) {
                       ptClickn=i;
                       break;
@@ -1464,8 +1436,8 @@ Redraw:
                 char ptfname[256];
                 if(nPt_FreeMode>0) {
                   for(i=0;i<nPt_FreeMode;i++) {
-                    dx = x-pt_FreeMode[i].x;
-                    dy = y-pt_FreeMode[i].y;
+                    dx = x-getW(pt_FreeMode[i].x);
+                    dy = y-getH(pt_FreeMode[i].y);
                     if(sqrt(dx*dx+dy*dy)<=7) {
                       ptClickn2=i;
                       break;
@@ -1474,8 +1446,8 @@ Redraw:
                 }
                 else { 
                   for(i=0;i<nPt[nowpicID];i++) {
-                    dx = x-pt[nowpicID][i].x;
-                    dy = y-pt[nowpicID][i].y;
+                    dx = x-getW(pt[nowpicID][i].x);
+                    dy = y-getH(pt[nowpicID][i].y);
                     if(sqrt(dx*dx+dy*dy)<=7) {
                       ptClickn2=i;
                       break;
@@ -1529,8 +1501,11 @@ Redraw:
         }
 
         is_dragging = false;
-        if(  img_rect.x<=0 && (img_rect.x+img_rect.w)>=0
-           &&img_rect.y<=0 && (img_rect.y+img_rect.h)>=0 ) {
+        if(   (img_rect.x<=0 && (img_rect.x+getW(img_rect.w))<SCREEN_WIDTH)
+           || (img_rect.y<=0 && (img_rect.y+getH(img_rect.h))<SCREEN_HEIGHT)
+           || (img_rect.x>0  &&  img_rect.x<SCREEN_WIDTH-10)
+           || (img_rect.y>0  &&  img_rect.y<SCREEN_HEIGHT-10)
+          ) {
           srcRect.x = -img_rect.x;
           srcRect.y = -img_rect.y;
           if(srcRect.x!=srcPt.x ||srcRect.y!=srcPt.y) {
@@ -1538,15 +1513,10 @@ Redraw:
             srcPt.y=srcRect.y;
             putData();
           }
-        //srcRect.w = img_rect.w;
-        //srcRect.h = img_rect.h;
-          zoomFactorX = 54;
-          zoomFactorY = 32;
-#ifdef DEBUG
-          printf("%d,sx=%4d,sy=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
-                 __LINE__,srcRect.x, srcRect.y,
-                 img_rect.x,img_rect.y,img_rect.w,img_rect.h);
-#endif
+          printf("%4dm(%4d,%4d),s(%4d,%4d),i(%4d,%4d,%4d,%4d),c(%4d,%4d)\n",
+            __LINE__,mouse_x, mouse_y,srcRect.x, srcRect.y,
+            img_rect.x,img_rect.y,img_rect.w,img_rect.h,   
+            mouse_x-img_rect.x,mouse_y-img_rect.y);
           if (e.button.button == SDL_BUTTON_LEFT) {
             myButton[0].isPressed = false; // Reset state when released
             myButton[1].isPressed = false; // Reset state when released
@@ -1559,11 +1529,10 @@ Redraw:
           SDL_GetMouseState(&mouse_x, &mouse_y);
           img_rect.x = mouse_x - offset_x;
           img_rect.y = mouse_y - offset_y;
-#ifdef DEBUG
-          printf("%d,mx=%4d,my=%4d,ix=%4d,iy=%4d,iw=%4d,ih=%4d\n",
-                 __LINE__,mouse_x, mouse_y,
-                 img_rect.x,img_rect.y,img_rect.w,img_rect.h);
-#endif
+          printf("%4dm(%4d,%4d),s(%4d,%4d),i(%4d,%4d,%4d,%4d),c(%4d,%4d)\n",
+            __LINE__,mouse_x, mouse_y,srcRect.x, srcRect.y,
+            img_rect.x,img_rect.y,img_rect.w,img_rect.h,   
+            mouse_x-img_rect.x,mouse_y-img_rect.y);
         }
       }
     } //SDL_KEYDOWN,SDL_QUIT
@@ -1582,34 +1551,26 @@ Redraw:
     SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
     SDL_RenderClear(gRenderer);
     // Draw the cropped portion
-    if(is_zooming) 
-    {
-      if(is_extending==1) {
-  //    printf("is_extending..(%4d,%4d,%4d,%4d)\n",destMRect.x,destMRect.y,destMRect.w,destMRect.h);
-        SDL_RenderCopy(gRenderer, texture, &srcMRect, &destMRect);            
-      }
-      else {
-        SDL_RenderCopy(gRenderer, texture, &srcRect, &destRect);
-      }
+    if (scaleTexture) {
+      jpgRects.x = 0; //getW(img_rect.x);
+      jpgRects.y = 0; //getH(img_rect.y);
+   // jpgRects.w = SCREEN_WIDTH*5;  //getW(mp4width);
+   // jpgRects.h = SCREEN_HEIGHT*5; //getH(mp4height);
+      jpgRects.w = getW(mp4width);
+      jpgRects.h = getH(mp4height);
+      img_rect.w = jpgRects.w;
+      img_rect.h = jpgRects.h;
+#if 0
+      printf("%4d j(%4d,%4d,%4d,%4d)i(%4d,%4d,%4d,%4d)\n",__LINE__,
+             jpgRects.x,jpgRects.y,jpgRects.w,jpgRects.h,
+             img_rect.x,img_rect.y,img_rect.w,img_rect.h);
+#endif     
+      SDL_RenderCopy(gRenderer, scaleTexture, &jpgRects, &img_rect);
     }
-    else { 
-      if (scaleTexture) {
-//        printf("%d >==(%4d,%4d,%4d,%4d),(%4d,%4d,%4d,%4d)==<\n",__LINE__,
-//              jpgRects.x,jpgRects.y,jpgRects.w,jpgRects.h,
-//              img_rect.x,img_rect.y,img_rect.w,img_rect.h
-//              ); 
-#if 1
-        jpgRects.w = 2160*2;
-        jpgRects.h = 3840*2;
-        img_rect.w = 2160*2;
-        img_rect.h = 3840*2;
-#endif
-        SDL_RenderCopy(gRenderer, scaleTexture, &jpgRects, &img_rect);
-      }
-      else {
-        SDL_RenderCopy(gRenderer, texture, NULL, &img_rect);
-      }          
-    }      
+    else {
+      SDL_RenderCopy(gRenderer, texture, NULL, &img_rect);
+    }
+      
     if (myButton[0].isPressed) {
       SDL_SetRenderDrawColor(gRenderer, 46, 204, 113, 255); // Green click accent
     } else {
@@ -1667,7 +1628,7 @@ Redraw:
         else {
           SDL_SetRenderDrawColor(gRenderer, 255, 0,   0, 255); 
         }  
-        DrawCircle(gRenderer, pt_FreeMode[i].x-srcRect.x, pt_FreeMode[i].y-srcRect.y, 10);
+        DrawCircle(gRenderer, getW(pt_FreeMode[i].x)-srcRect.x, getH(pt_FreeMode[i].y)-srcRect.y, 10);
       }
     }
     else {  
@@ -1681,14 +1642,18 @@ Redraw:
         else {
           SDL_SetRenderDrawColor(gRenderer, 255, 0,   0, 255); 
         }  
-        DrawCircle(gRenderer, pt[nowpicID][i].x-srcRect.x, pt[nowpicID][i].y-srcRect.y, 10);
+        DrawCircle(gRenderer, getW(pt[nowpicID][i].x)-srcRect.x, getH(pt[nowpicID][i].y)-srcRect.y, 10);
       }
     }
 
     if(predictClick.x!=-1 && predictClick.y!=-1) 
     {
       SDL_SetRenderDrawColor(gRenderer, 255,  0,  255, 255);
-      DrawCircle(gRenderer, predictClick.x-srcRect.x, predictClick.y-srcRect.y, 10);
+      DrawCircle(gRenderer, getW(predictClick.x)-srcRect.x, getW(predictClick.y)-srcRect.y, 10);
+    }
+    for (i=0;i<2;i++) {
+      SDL_SetRenderDrawColor(gRenderer, 55, 255, 55, 255);
+      DrawCircle(gRenderer, getW(predictClicks[i].x)-srcRect.x, getW(predictClicks[i].y)-srcRect.y, 10);
     }
 
 	//Rerender text if needed
@@ -1776,7 +1741,7 @@ void generateTXT(void) {
   img_rect2.x    = 0;
   img_rect2.y    = 0;
   img_rect2.w    = txtw_width2;
-  img_rect2.h    = height;
+  img_rect2.h    = mp4height;
   char fname[256];
   int frame_index=0;
   //Create a hidden window & 4K software renderer
@@ -1896,5 +1861,60 @@ void generateTXT(void) {
 
   generateMP4(fDirectory, 'y');
   return;
+}
+void BLUE3x4(void) {
+  //u1->v1 u2->v2 u3->v3
+  vector_t *u1=ivector4_new(     0,   0.00,       0,  1.6);
+  vector_t *u2=ivector4_new( 3.750,   0.00,  -2.165,  1.0);
+  vector_t *u3=ivector4_new( 3.750,   1.00,   2.165,  1.0);
+  vector_t *u4=ivector4_new( 3.750,   4.00,  -2.165,  1.0);
+  vector_t *v1=ivector3_new( pt[nowpicID][0].x, pt[nowpicID][0].y,  1.0);  
+  vector_t *v2=ivector3_new( pt[nowpicID][1].x, pt[nowpicID][1].y,  1.0);  
+  vector_t *v3=ivector3_new( pt[nowpicID][2].x, pt[nowpicID][2].y,  1.0);  
+  vector_t *v4=ivector3_new( pt[nowpicID][3].x, pt[nowpicID][3].y,  1.0);  
+  matrix_t *A=(matrix_t *)matrix_new(4, 4);
+  matrix_t *L=(matrix_t *)matrix_new(4, 4);
+  matrix_t *U=(matrix_t *)matrix_new(4, 4);
+  int B[4],E[4];
+  A->data[0][0]=u1->data[0];A->data[0][1]=u1->data[1];
+  A->data[0][2]=u1->data[2];A->data[0][3]=u1->data[3];
+  A->data[1][0]=u2->data[0];A->data[1][1]=u2->data[1];
+  A->data[1][2]=u2->data[2];A->data[1][3]=u2->data[3];
+  A->data[2][0]=u3->data[0];A->data[2][1]=u3->data[1];
+  A->data[2][2]=u3->data[2];A->data[2][3]=u3->data[3];
+  A->data[3][0]=u4->data[0];A->data[3][1]=u4->data[1];
+  A->data[3][2]=u4->data[2];A->data[3][3]=u4->data[3]; 
+  printf("A ");matrix_print(A);
+  bool isSingular = computeFullPivLU(A,L,U,B,E);
+  printf("B=%3d,%3d,%3d,%3d\n",B[0],B[1],B[2],B[3]);
+  printf("E=%3d,%3d,%3d,%3d\n",E[0],E[1],E[2],E[3]); 
+  printf("Is Singular: %s\n",isSingular ? "YES" : "NO");  
+  matrix_t *BB=(matrix_t *)matrix_from_row_perm4(B);
+  matrix_t *EE=(matrix_t *)matrix_from_col_perm4(E);
+//test
+  matrix_t *LxU=(matrix_t *)matrix_dot(L,U);
+//printf("LxU ");matrix_print(LxU);
+//printf("EE ");matrix_print(EE);
+  matrix_t *LxU1=(matrix_t *)matrix_dot(LxU,EE);
+//printf("LxU1 ");matrix_print(LxU1);
+  matrix_t *LxU2=(matrix_t *)matrix_dot(BB,LxU1);
+  printf("LxU2 ");matrix_print(LxU2);
+  matrix_t *LxU3=matrix_invert(LxU2);
+  printf("LxU3 ");matrix_print(LxU3);
+  printf("L ");matrix_print(L);
+  printf("U ");matrix_print(U);
+  matrix_t *BM=computeBM_from_BLUE4(L,U,B,E,v1,v2,v3,v4);
+  printf("BM ");matrix_print(BM);
+  vector_t *u5=ivector4_new( 0.00,  4.00,  0.00,  1.0);
+  vector_t *va1=matrix_mult_vector(BM,u5);
+  printf("va1 ");vector_print(va1);
+  predictClicks[0].x=static_cast<int> (va1->data[0]);
+  predictClicks[0].y=static_cast<int> (va1->data[1]);
+  vector_t *u6=ivector4_new( 3.75,  4.00, 2.165,  1.0);
+  vector_t *va2=matrix_mult_vector(BM,u6);
+  printf("va2 ");vector_print(va2);
+  predictClicks[1].x=static_cast<int> (va2->data[0]);
+  predictClicks[1].y=static_cast<int> (va2->data[1]);
+  printf("BLUE3x4\n");
 }
 
