@@ -923,7 +923,7 @@ static int writeframejpg(AVFormatContext *fmt_ctx, AVCodecContext *c,
     //Write the compressed frame to the media file.
     //log_packet(fmt_ctx, pkt);
 
-      snprintf(imgbuf, sizeof(imgbuf), "img/x%03d.jpg",frame_index); 
+      snprintf(imgbuf, sizeof(imgbuf), "img/x%04d.jpg",frame_index); 
 //    savePicture(filt_frame, imgbuf);
       savePicture(frame, imgbuf);
       printf("fname=%s\n",imgbuf);
@@ -1383,6 +1383,7 @@ const AVCodec *codec = NULL;
 AVPacket *packet = NULL;
 AVFrame *frame = NULL;
 AVFrame *getFrame(const char *filename) {
+   if(format_ctx) avformat_close_input(&format_ctx);
    packet = av_packet_alloc();
    frame  = av_frame_alloc();
   // 1. Open the input file
@@ -1467,7 +1468,7 @@ void freeAll(void) {
   format_ctx = NULL;
 }
 #define ALGORITHM0 0
-void testToolBox2(const char*fname,const char *fDirectory,int x,int y) {
+void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x,int y) {
   int x0=x,x2;
   int y0=y,y2;
 #if ALGORITHM0
@@ -1513,14 +1514,15 @@ void testToolBox2(const char*fname,const char *fDirectory,int x,int y) {
       }  
     }
   }
-  sprintf(tfname,"%s/tmp.jpg",fDirectory);
+//sprintf(tfname,%s/tmp.jpg",fDirectory);
+  sprintf(tfname,"img/x%04dt.jpg",frame_index);
   savePicture(aframe, tfname);
   aframe=aframe;
 }
-void getYUV(int frame_index,int x,int y,int *Y,int *U,int *V) {
+void getYUV(const char *fDirectory,int frame_index,int x,int y,int *Y,int *U,int *V) {
   char fname[256];
-  sprintf(fname,"../VID20260802132623/x%04d.jpg",frame_index); //
-  printf("%s(%4d) (%4d,%4d)\n",__FILE__,__LINE__,x,y);
+  sprintf(fname,"%s/x%04d.jpg",fDirectory,frame_index); //
+  printf("%s(%4d) (%4d,%4d) %s\n",__FILE__,__LINE__,x,y,fname);
   AVFrame *aframe=getFrame(fname);
   if(x>=0 && y>0 && x<codec_ctx->width && y<codec_ctx->height) {
     *Y=frame->data[0][y * frame->linesize[0] + x];
@@ -1911,4 +1913,9 @@ void callext(const char *exename) {
   if (result != 0) {
     printf("%s(%d) %d,External command failed or returned non-zero.\n",__FILE__,__LINE__,result);
   }
+}
+void act2(const char *fDirectory,int fi[])
+{
+//??????????
+  printf("arithmetic category theory](%s)%3d,%3d,%3d\n",fDirectory,fi[0],fi[1],fi[2]);
 }

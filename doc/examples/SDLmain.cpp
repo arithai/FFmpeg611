@@ -678,14 +678,15 @@ SDL_Texture* DuplicateAndScaleTexture(SDL_Renderer* renderer, SDL_Texture* srcTe
   SDL_SetRenderTarget(renderer, oldTarget);
   return dupTex;
 }
-void testToolBox2(const char *fname,const char *fDirectory,int x,int y);
+void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x,int y);
 void loadtmp(void);
-void getYUV(int frame_index,int x,int y,int *Y,int *U,int *V);
+void getYUV(const char *fDirectory,int frame_index,int x,int y,int *Y,int *U,int *V);
 int generateMP4(const char *path,const char cprefix);
 void generateTXT(void); //it need all data
 int dfvmux3diff_main(int argc, char **argv);
 void callext(const char *exename);
 void BLUE3x4(void);
+void act2(const char *fDirectory,int fi[]);
 //matrix computation
 #include "matrix.h"
 int sdl_main(int argc, char* argv[]) {
@@ -1037,10 +1038,11 @@ Redraw:
               if(ptClick.y<0) y0=0;
               if(picSN_FreeMode==0) picSN_FreeMode=1;
               sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
-              testToolBox2(fname,fDirectory,x0,y0);
-              sprintf(fname,"%s/tmp.jpg",fDirectory);
+              testToolBox2(fname,fDirectory,picSN_FreeMode,x0,y0);
+              sprintf(fname,"img/x%04dt.jpg",picSN_FreeMode);
               surface = IMG_Load(fname);
               texture = SDL_CreateTextureFromSurface(gRenderer, surface);
+              SDL_FreeSurface(surface);
               scaleTexture = DuplicateAndScaleTexture(gRenderer, texture);
               PromptText = "testToolBox2 done!";
               printf("Enter Return pressed![%s](%d,%d))!\n",inputText.c_str(),ptClick.x,ptClick.y);
@@ -1070,8 +1072,8 @@ Redraw:
                 int x0=ptClick.x;
                 int y0=ptClick.y;
                 int Y0,U0,V0;
-                getYUV(frame_index0,x0,y0,&Y0,&U0,&V0);
-                sprintf(Prompt,"pt [%4d,%4d]=[%3d,%3d,%3d],[%3d,%3d,%3d]",x0,y0,Y0,U0,V0,
+                getYUV(fDirectory,frame_index0,x0,y0,&Y0,&U0,&V0);
+                sprintf(Prompt,"[%4d,%4d]=[%3d,%3d,%3d],[%3d,%3d,%3d]",x0,y0,Y0,U0,V0,
                   YUV2R(Y0,U0,V0),YUV2G(Y0,U0,V0),YUV2B(Y0,U0,V0));
                 PromptText = Prompt;
                 printf("Enter Return pressed![%s][%s]!\n",inputText.c_str(),Prompt);
@@ -1083,6 +1085,7 @@ Redraw:
             }
             else if(!memcmp(inputText.c_str(),"setsn",5)) {
               picSN_FreeMode=atoi(&inputText.c_str()[6]);
+              frame_index=picSN_FreeMode;
               printf("SN=%d\n",picSN_FreeMode);
               char fname[256];
               sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
@@ -1186,6 +1189,7 @@ Redraw:
                 }
                 printf("%4d+,<%lld,%c>\n",__LINE__,inputText.length(),e.key.keysym.sym);
                 BLUE3x4();
+                act2(fDirectory,picSN);
                 break;
               }
               else if(e.key.keysym.mod==0x2000) { //CAPS
@@ -1375,6 +1379,20 @@ Redraw:
           if(ptClick.x==-1 && ptClick.y==-1) {
             ptClick.x = x;
             ptClick.y = y;
+
+//getYUV
+            char Prompt[256];
+            int frame_index0=picSN[nowpicID];
+            int x0=getw(ptClick.x);
+            int y0=geth(ptClick.y);
+            int Y0,U0,V0;
+            getYUV(fDirectory,frame_index0,x0,y0,&Y0,&U0,&V0);
+            sprintf(Prompt,"[%4d,%4d]=[%3d,%3d,%3d],[%3d,%3d,%3d]",x0,y0,Y0,U0,V0,
+              YUV2R(Y0,U0,V0),YUV2G(Y0,U0,V0),YUV2B(Y0,U0,V0));
+            PromptText = Prompt;
+            printf("Enter Return pressed![%s][%s]!\n",inputText.c_str(),Prompt);
+			renderText = true;
+
           }
           else {
             if(is_leftclick) {
@@ -1400,6 +1418,20 @@ Redraw:
               }
               else {
                 ptClick.x=x;  ptClick.y=y;
+
+              //getYUV
+                char Prompt[256];
+                int frame_index0=picSN[nowpicID];
+                int x0=getw(ptClick.x);
+                int y0=geth(ptClick.y);
+                int Y0,U0,V0;
+                getYUV(fDirectory,frame_index0,x0,y0,&Y0,&U0,&V0);
+                sprintf(Prompt,"[%4d,%4d]=[%3d,%3d,%3d],[%3d,%3d,%3d]",x0,y0,Y0,U0,V0,
+                  YUV2R(Y0,U0,V0),YUV2G(Y0,U0,V0),YUV2B(Y0,U0,V0));
+                PromptText = Prompt;
+                printf("Enter Return pressed![%s][%s]!\n",inputText.c_str(),Prompt);
+			    renderText = true;
+
               }
             }
             else {
@@ -1539,12 +1571,18 @@ Redraw:
 
     if (myButton[4].isPressed) {
       char imgbuf[256];
-      printf("%s(%4d) %s\n",__FILE__,__LINE__,argv[1]);
-      myButton[4].isPressed = false;          
-      getframe(argv[1], frame_index);
-      snprintf(imgbuf, sizeof(imgbuf), "img/x%03d.jpg",frame_index); 
+      char mp4buf[256];
+      myButton[4].isPressed = false;   
+//using setsn to change frame_index,fDirectory="../VID20260503072852"
+      memcpy(mp4buf,fDirectory+1,19);
+      memcpy(mp4buf+19,".mp4",4);
+      mp4buf[23]=0;
+//    getframe(argv[1], frame_index);
+      getframe(mp4buf, frame_index);
+      snprintf(imgbuf, sizeof(imgbuf), "img/x%04d.jpg",frame_index); 
+//    printf("%s(%4d)[%04d],%s\n",__FILE__,__LINE__,frame_index,argv[1]);
+      printf("%s(%4d)[%04d],%s,%s\n",__FILE__,__LINE__,frame_index,mp4buf,imgbuf);
       surface = IMG_Load(imgbuf);
-
       texture = SDL_CreateTextureFromSurface(gRenderer, surface);          
     }
 

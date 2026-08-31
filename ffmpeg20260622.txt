@@ -1,4 +1,19 @@
 
+
+20260831
+Could not open source file ../VID20260825123112/x0080.jpg
+Segmentation fault
+
+php gensmap.php a b c
+getframe(argv[1], frame_index);
+/usr/sbin/apachectl restart
+make DEBUG=0 -fMakefile.act dfv2
+./dfvmux3diff.exe ./VID20260503072852.mp4 ./VID20260503072852_r2.mp4
+python main.py
+mysql -h 127.0.0.1 -u root -p111111
+Server version: 5.0.96-community-nt MySQL Community Edition (GPL)
+C:\tools\mysql-5.0.96-winx64
+
 20260828
 $ /usr/sbin/apachectl restart
 httpd not running, trying to start
