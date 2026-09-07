@@ -678,7 +678,8 @@ SDL_Texture* DuplicateAndScaleTexture(SDL_Renderer* renderer, SDL_Texture* srcTe
   SDL_SetRenderTarget(renderer, oldTarget);
   return dupTex;
 }
-void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x,int y);
+void testToolBox2(const char *fname,const char *fDirectory,int frame_index,
+                  int x,int y,int *px,int *py);
 void loadtmp(void);
 void getYUV(const char *fDirectory,int frame_index,int x,int y,int *Y,int *U,int *V);
 int generateMP4(const char *path,const char cprefix);
@@ -686,7 +687,7 @@ void generateTXT(void); //it need all data
 int dfvmux3diff_main(int argc, char **argv);
 void callext(const char *exename);
 void BLUE3x4(void);
-void act2(const char *fDirectory,int fi[]);
+void act2(const char *fDirectory,int fi[],int x,int y);
 //matrix computation
 #include "matrix.h"
 int sdl_main(int argc, char* argv[]) {
@@ -724,7 +725,7 @@ int sdl_main(int argc, char* argv[]) {
 //SDL_Window* popupWindow = SDL_CreateWindow("Popup Menu", 200, 200, 300, 150, SDL_WINDOW_BORDERLESS | SDL_WINDOW_ALWAYS_ON_TOP);
   SDL_Window* popupWindow = SDL_CreateWindow("Popup Menu", 200, 200, 400, 300, SDL_WINDOW_ALWAYS_ON_TOP);
   SDL_Renderer* popupRenderer = SDL_CreateRenderer(popupWindow, -1, SDL_RENDERER_ACCELERATED);
-  std::vector<std::string> items = {"VID20260503072852", "VID20260701152055", "VID20260802132623", "VID20260825123112"};
+  std::vector<std::string> items = {"VID20260503072852", "VID20260902080331", "VID20260902080414", "VID20260825123112"};
   int selectedIndex = 0;
   SDL_Rect listboxRect = {50, 50, 300, 200};
   int itemHeight = 30;
@@ -941,6 +942,7 @@ Redraw:
                e.key.keysym.mod,e.key.keysym.unused);
       //Triggered exactly when a key is pressed down
       //Check which specific key was pressed
+        char Prompt[256];char fname[256];
         switch (e.key.keysym.sym) {
           case SDLK_BACKSPACE:
             if(inputText.length() > 0) {
@@ -991,7 +993,6 @@ Redraw:
             quit =1;
             break;
           case SDLK_DOWN:
-            char Prompt[256];char fname[256];
             picSN_FreeMode--;
             sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
             surface = IMG_Load(fname);
@@ -1035,16 +1036,21 @@ Redraw:
               int y0=geth(ptClick.y);
               if(ptClick.x<0) x0=0;
               char fname[256];
+              int px,py;
               if(ptClick.y<0) y0=0;
               if(picSN_FreeMode==0) picSN_FreeMode=1;
               sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
-              testToolBox2(fname,fDirectory,picSN_FreeMode,x0,y0);
+              testToolBox2(fname,fDirectory,picSN_FreeMode,x0,y0,&px,&py);
+              if(px!=-1 && py!=-1) {
+                predictClick.x=px;predictClick.y=py;
+              } 
               sprintf(fname,"img/x%04dt.jpg",picSN_FreeMode);
               surface = IMG_Load(fname);
               texture = SDL_CreateTextureFromSurface(gRenderer, surface);
               SDL_FreeSurface(surface);
               scaleTexture = DuplicateAndScaleTexture(gRenderer, texture);
-              PromptText = "testToolBox2 done!";
+              sprintf(Prompt,"%s(%04d) test",fDirectory+6,picSN_FreeMode);
+              PromptText = Prompt;
               printf("Enter Return pressed![%s](%d,%d))!\n",inputText.c_str(),ptClick.x,ptClick.y);
 			  renderText = true;
             }
@@ -1069,8 +1075,10 @@ Redraw:
               if(ptClick.x>=0 && ptClick.y>=0) {
                 char Prompt[256];
                 int frame_index0=picSN[nowpicID];
-                int x0=ptClick.x;
-                int y0=ptClick.y;
+                int x0=getw(ptClick.x);
+                int y0=geth(ptClick.y);
+              //int x0=ptClick.x;
+              //int y0=ptClick.y;
                 int Y0,U0,V0;
                 getYUV(fDirectory,frame_index0,x0,y0,&Y0,&U0,&V0);
                 sprintf(Prompt,"[%4d,%4d]=[%3d,%3d,%3d],[%3d,%3d,%3d]",x0,y0,Y0,U0,V0,
@@ -1140,56 +1148,61 @@ Redraw:
             else {
               if(e.key.keysym.mod==0 || 
                 (e.key.keysym.mod==2 && e.key.keysym.sym>0) ) {
-                if(e.key.keysym.sym=='a' && inputText.length()==0) {
-                  printf("%4d+,<%lld,%c>\n",__LINE__,inputText.length(),e.key.keysym.sym);
-              	  #if 0
-                  vector_t *u1=(vector_t *)ivector_new(pt[nowpicID][0].x,pt[nowpicID][0].y);
-                  vector_t *u2=(vector_t *)ivector_new(pt[nowpicID][1].x,pt[nowpicID][1].y);
-                  vector_t *xv1=(vector_t *)ivector6_new(0,0.1,0.3,0.2,0,0.8);
-                  matrix_t *A=(matrix_t *)matrix_from_vectors(u1,u2);
-                  matrix_t *b=(matrix_t *)SolveB_from_Ax(A,xv1);
-                  vector_t *u3=(vector_t *)ivector_new(pt[nowpicID][2].x,pt[nowpicID][2].y);
-                  vector_t *xv3=(vector_t *)matrix_mult_vector(b, u3);
-                  vector_print(xv3);
-                  vector_t *xv4=(vector_t *)matrix_mult_vector(b, u1);
-                  vector_print(xv4);
-                  vector_t *xv5=(vector_t *)matrix_mult_vector(b, u2);
-                  vector_print(xv5);
-                  printf("=================\n");
-                  lr_main();
-                  #endif
-                //u1->v1 u2->v2 u3->v3
-                  vector_t *u1=ivector3_new(pt[0][0].x,pt[0][0].y,1.0);
-                  vector_t *u2=ivector3_new(pt[0][1].x,pt[0][1].y,1.0);
-                  vector_t *u3=ivector3_new(pt[0][2].x,pt[0][2].y,1.0);
-                  vector_t *v1=ivector3_new(pt[1][0].x,pt[1][0].y,1.0);  ////<== row vector 1
-                  vector_t *v2=ivector3_new(pt[1][1].x,pt[1][1].y,1.0);  ////<== row vector 2
-                  vector_t *v3=ivector3_new(pt[1][2].x,pt[1][2].y,1.0);  ////<== row vector 3
-                  matrix_t *BM=computeBM_from_UV(u1,u2,u3,v1,v2,v3);
-                  predictClick.x=-1;predictClick.y=-1;
-                  if(BM!=NULL) {
-                    printf("BM ");matrix_print(BM);
-                    vector_t *v20=matrix_mult_vector(BM,u2);
-                    printf("v2  ");vector_print(v2);
-                    printf("v20 ");vector_print(v20); //check BM
-                    vector_t *u4=ivector3_new(pt[0][3].x,pt[0][3].y,1.0);
-                    vector_t *v4=matrix_mult_vector(BM,u4);
-                    printf("va ");vector_print(v4);
-                    predictClick.x=(int)v4->data[0];predictClick.y=(int)v4->data[1];
-                    printf("%s(%4d) %s (%4d,%4d),(%4d,%4d)\n",__FILE__,__LINE__,argv[1],
-                      srcRect.x,srcRect.y,predictClick.x-srcRect.x,predictClick.y-srcRect.y);
+                if(inputText.length()==0) {
+                  if(e.key.keysym.sym=='a') {
+                    printf("%4d+,<%lld,%c>\n",__LINE__,inputText.length(),e.key.keysym.sym);
+              	    #if 0
+                    vector_t *u1=(vector_t *)ivector_new(pt[nowpicID][0].x,pt[nowpicID][0].y);
+                    vector_t *u2=(vector_t *)ivector_new(pt[nowpicID][1].x,pt[nowpicID][1].y);
+                    vector_t *xv1=(vector_t *)ivector6_new(0,0.1,0.3,0.2,0,0.8);
+                    matrix_t *A=(matrix_t *)matrix_from_vectors(u1,u2);
+                    matrix_t *b=(matrix_t *)SolveB_from_Ax(A,xv1);
+                    vector_t *u3=(vector_t *)ivector_new(pt[nowpicID][2].x,pt[nowpicID][2].y);
+                    vector_t *xv3=(vector_t *)matrix_mult_vector(b, u3);
+                    vector_print(xv3);
+                    vector_t *xv4=(vector_t *)matrix_mult_vector(b, u1);
+                    vector_print(xv4);
+                    vector_t *xv5=(vector_t *)matrix_mult_vector(b, u2);
+                    vector_print(xv5);
+                    printf("=================\n");
+                    lr_main();
+                    #endif
+                  //u1->v1 u2->v2 u3->v3
+                    vector_t *u1=ivector3_new(pt[0][0].x,pt[0][0].y,1.0);
+                    vector_t *u2=ivector3_new(pt[0][1].x,pt[0][1].y,1.0);
+                    vector_t *u3=ivector3_new(pt[0][2].x,pt[0][2].y,1.0);
+                    vector_t *v1=ivector3_new(pt[1][0].x,pt[1][0].y,1.0);  ////<== row vector 1
+                    vector_t *v2=ivector3_new(pt[1][1].x,pt[1][1].y,1.0);  ////<== row vector 2
+                    vector_t *v3=ivector3_new(pt[1][2].x,pt[1][2].y,1.0);  ////<== row vector 3
+                    matrix_t *BM=computeBM_from_UV(u1,u2,u3,v1,v2,v3);
+                    predictClick.x=-1;predictClick.y=-1;
+                    if(BM!=NULL) {
+                      printf("BM ");matrix_print(BM);
+                      vector_t *v20=matrix_mult_vector(BM,u2);
+                      printf("v2  ");vector_print(v2);
+                      printf("v20 ");vector_print(v20); //check BM
+                      vector_t *u4=ivector3_new(pt[0][3].x,pt[0][3].y,1.0);
+                      vector_t *v4=matrix_mult_vector(BM,u4);
+                      printf("va ");vector_print(v4);
+                      predictClick.x=(int)v4->data[0];predictClick.y=(int)v4->data[1];
+                      printf("%s(%4d) %s (%4d,%4d),(%4d,%4d)\n",__FILE__,__LINE__,argv[1],
+                        srcRect.x,srcRect.y,predictClick.x-srcRect.x,predictClick.y-srcRect.y);
+                    }
+                    else {
+                      printf("Please select other points.\n");
+                    }	
+                    printf("BLUE3x4 %4d+,<%lld,%c>\n",__LINE__,inputText.length(),e.key.keysym.sym);
+                    BLUE3x4();
                   }
-                  else {
-                    printf("Please select other points.\n");
-                  }		    
+                  else if(e.key.keysym.sym=='z') {
+                    int x0=getw(ptClick.x);
+                    int y0=geth(ptClick.y);
+                    printf("act2 %4d+,<%lld,%c>(%4d,%4d)\n",__LINE__,inputText.length(),e.key.keysym.sym,x0,y0);
+                    act2(fDirectory,picSN,x0,y0);
+                  }
                 }
-                else {
-                  inputText += e.key.keysym.sym;
-			      renderText = true;
-                }
-                printf("%4d+,<%lld,%c>\n",__LINE__,inputText.length(),e.key.keysym.sym);
-                BLUE3x4();
-                act2(fDirectory,picSN);
+                inputText += e.key.keysym.sym;
+ 		        renderText = true;
                 break;
               }
               else if(e.key.keysym.mod==0x2000) { //CAPS
@@ -1263,7 +1276,7 @@ Redraw:
       //Adjust dimensions on mouse wheel
         int oldzoomFactor = zoomFactor;
         if (e.wheel.y > 0) { // Scroll Up (Zoom In)
-          if(zoomFactor<30) {
+          if(zoomFactor<20) {
             zoomFactor++;
           } 
         } else if (e.wheel.y < 0) { // Scroll Down (Zoom Out)
@@ -1399,7 +1412,7 @@ Redraw:
             // Left click action here
               dx = x-ptClick.x;
               dy = y-ptClick.y;
-              if(sqrt(dx*dx+dy*dy)<50) {
+              if(sqrt(dx*dx+dy*dy)<=3) {
                 printf("(%4d)o(%4d,%4d)s(%4d,%4d)p(%4d,%4d),now=%3d,pic=%3d\n",__LINE__,x,y,
                   srcRect.x,srcRect.y,ptClick.x,ptClick.y,nowpicID,picSN[nowpicID]); 
                 if(picSN_FreeMode>0) {
@@ -1441,7 +1454,7 @@ Redraw:
                   for(i=0;i<nPt_FreeMode;i++) {
                     dx = x-getW(pt_FreeMode[i].x);
                     dy = y-getH(pt_FreeMode[i].y);
-                    if(sqrt(dx*dx+dy*dy)<=7) {
+                    if(sqrt(dx*dx+dy*dy)<=3) {
                       ptClickn=i;
                       break;
                     }
@@ -1451,7 +1464,7 @@ Redraw:
                   for(i=0;i<nPt[nowpicID];i++) {
                     dx = x-getW(pt[nowpicID][i].x);
                     dy = y-getH(pt[nowpicID][i].y);
-                    if(sqrt(dx*dx+dy*dy)<=7) {
+                    if(sqrt(dx*dx+dy*dy)<=3) {
                       ptClickn=i;
                       break;
                     }
@@ -1470,7 +1483,7 @@ Redraw:
                   for(i=0;i<nPt_FreeMode;i++) {
                     dx = x-getW(pt_FreeMode[i].x);
                     dy = y-getH(pt_FreeMode[i].y);
-                    if(sqrt(dx*dx+dy*dy)<=7) {
+                    if(sqrt(dx*dx+dy*dy)<=3) {
                       ptClickn2=i;
                       break;
                     }
@@ -1480,7 +1493,7 @@ Redraw:
                   for(i=0;i<nPt[nowpicID];i++) {
                     dx = x-getW(pt[nowpicID][i].x);
                     dy = y-getH(pt[nowpicID][i].y);
-                    if(sqrt(dx*dx+dy*dy)<=7) {
+                    if(sqrt(dx*dx+dy*dy)<=3) {
                       ptClickn2=i;
                       break;
                     }
@@ -1531,10 +1544,26 @@ Redraw:
             }
           }
         }
-
+      //SDL_MOUSEMOTION,img_rect.x,img_rect.y
+        if(myButton[0].isPressed==false && myButton[1].isPressed==false &&
+           myButton[2].isPressed==false && myButton[3].isPressed==false &&
+           myButton[4].isPressed==false && myButton[5].isPressed==false &&
+           is_dragging==true) {
+          SDL_GetMouseState(&mouse_x, &mouse_y);
+          img_rect.x = mouse_x - offset_x;
+          img_rect.y = mouse_y - offset_y;
+          printf("%4d(%4d,%4d),i(%4d,%4d,%4d,%4d)\n",
+               __LINE__,mouse_x, mouse_y,
+               img_rect.x,img_rect.y,img_rect.w,img_rect.h);
+        }  
+        printf("%4dm(%4d,%4d),i(%4d,%4d,%4d,%4d),c(%4d,%4d),r(%4d,%4d)\n",
+               __LINE__,mouse_x, mouse_y,
+               img_rect.x,img_rect.y,img_rect.w,img_rect.h,
+               mouse_x-img_rect.x,mouse_y-img_rect.y,
+               img_rect.x+img_rect.w,img_rect.y+img_rect.h);
         is_dragging = false;
-        if(   (img_rect.x<=0 && (img_rect.x+getW(img_rect.w))<SCREEN_WIDTH)
-           || (img_rect.y<=0 && (img_rect.y+getH(img_rect.h))<SCREEN_HEIGHT)
+        if(   (img_rect.x<=0 && (img_rect.x+img_rect.w)>=1)
+           || (img_rect.y<=0 && (img_rect.y+img_rect.h)>=1)
            || (img_rect.x>0  &&  img_rect.x<SCREEN_WIDTH-10)
            || (img_rect.y>0  &&  img_rect.y<SCREEN_HEIGHT-10)
           ) {
@@ -1561,10 +1590,12 @@ Redraw:
           SDL_GetMouseState(&mouse_x, &mouse_y);
           img_rect.x = mouse_x - offset_x;
           img_rect.y = mouse_y - offset_y;
+#if DBG
           printf("%4dm(%4d,%4d),s(%4d,%4d),i(%4d,%4d,%4d,%4d),c(%4d,%4d)\n",
             __LINE__,mouse_x, mouse_y,srcRect.x, srcRect.y,
             img_rect.x,img_rect.y,img_rect.w,img_rect.h,   
             mouse_x-img_rect.x,mouse_y-img_rect.y);
+#endif
         }
       }
     } //SDL_KEYDOWN,SDL_QUIT
@@ -1651,7 +1682,7 @@ Redraw:
     if(ptClick.x>=0 && ptClick.y>=0) {
    // printf("%s(%4d) %s (%4d,%4d)\n",__FILE__,__LINE__,argv[1],ptClick.y,ptClick.y);
       SDL_SetRenderDrawColor(gRenderer, 255, 255, 0, 255); 
-      DrawCircle(gRenderer, ptClick.x-srcRect.x, ptClick.y-srcRect.y, 10);
+      DrawCircle(gRenderer, ptClick.x-srcRect.x, ptClick.y-srcRect.y, 4);
     } 
 
 //DrawCircle
@@ -1659,14 +1690,14 @@ Redraw:
       int n=nPt_FreeMode;
       if(n>10) n=10;
       for(int i=0;i<n;i++) {
-//      circleColor(gRenderer, pt[nowpicID][i].x, pt[nowpicID][i].y, 50, 0xFF0000FF);
+//      circleColor(gRenderer, pt[nowpicID][i].x, pt[nowpicID][i].y, 4, 0xFF0000FF);
         if(ptClickn==i) {
           SDL_SetRenderDrawColor(gRenderer, 0,   0, 255, 255); 
         }
         else {
           SDL_SetRenderDrawColor(gRenderer, 255, 0,   0, 255); 
         }  
-        DrawCircle(gRenderer, getW(pt_FreeMode[i].x)-srcRect.x, getH(pt_FreeMode[i].y)-srcRect.y, 10);
+        DrawCircle(gRenderer, getW(pt_FreeMode[i].x)-srcRect.x, getH(pt_FreeMode[i].y)-srcRect.y, 4);
       }
     }
     else {  
@@ -1680,7 +1711,7 @@ Redraw:
         else {
           SDL_SetRenderDrawColor(gRenderer, 255, 0,   0, 255); 
         }  
-        DrawCircle(gRenderer, getW(pt[nowpicID][i].x)-srcRect.x, getH(pt[nowpicID][i].y)-srcRect.y, 10);
+        DrawCircle(gRenderer, getW(pt[nowpicID][i].x)-srcRect.x, getH(pt[nowpicID][i].y)-srcRect.y, 4);
       }
     }
 
@@ -1691,7 +1722,7 @@ Redraw:
     }
     for (i=0;i<2;i++) {
       SDL_SetRenderDrawColor(gRenderer, 55, 255, 55, 255);
-      DrawCircle(gRenderer, getW(predictClicks[i].x)-srcRect.x, getW(predictClicks[i].y)-srcRect.y, 10);
+      DrawCircle(gRenderer, getW(predictClicks[i].x)-srcRect.x, getW(predictClicks[i].y)-srcRect.y, 4);
     }
 
 	//Rerender text if needed

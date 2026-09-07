@@ -1129,6 +1129,7 @@ int getframe(const char *filename, int frame_index)
   }
 //if ((ret = open_input_file(argv[1])) < 0) goto end;
 //open_input_file start
+   if(fmt_ctx) avformat_close_input(&fmt_ctx);
   if ((ret = avformat_open_input(&fmt_ctx, filename, NULL, NULL)) < 0) {
     av_log(NULL, AV_LOG_ERROR, "Cannot open input file\n");
     return ret;
@@ -1386,17 +1387,17 @@ AVFrame *getFrame(const char *filename) {
    if(format_ctx) avformat_close_input(&format_ctx);
    packet = av_packet_alloc();
    frame  = av_frame_alloc();
-  // 1. Open the input file
+  //1. Open the input file
   if (avformat_open_input(&format_ctx, filename, NULL, NULL) < 0) {
     fprintf(stderr, "Could not open source file %s\n", filename);
     return NULL;
   }
-  // 2. Find stream information
+  //2. Find stream information
   if (avformat_find_stream_info(format_ctx, NULL) < 0) {
     fprintf(stderr, "Could not find stream information\n");
     return NULL;
   }
-  // 3. Find the video stream (JPG is treated as a single-frame video stream)
+  //3. Find the video stream (JPG is treated as a single-frame video stream)
   int stream_index = -1;
   for (unsigned int i = 0; i < format_ctx->nb_streams; i++) {
     if (format_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -1408,14 +1409,14 @@ AVFrame *getFrame(const char *filename) {
     fprintf(stderr, "Could not find video stream in file\n");
     return NULL;
   }
-  // 4. Find decoder for the JPG stream
+  //4. Find decoder for the JPG stream
   AVCodecParameters *codec_params = format_ctx->streams[stream_index]->codecpar;
   codec = avcodec_find_decoder(codec_params->codec_id);
   if (!codec) {
     fprintf(stderr, "Failed to find decoder\n");
     return NULL;
   }
-  // 5. Allocate and initialize codec context
+  //5. Allocate and initialize codec context
   codec_ctx = avcodec_alloc_context3(codec);
   if (avcodec_parameters_to_context(codec_ctx, codec_params) < 0) {
     fprintf(stderr, "Failed to copy codec params to context\n");
@@ -1467,26 +1468,232 @@ void freeAll(void) {
   codec_ctx = NULL;
   format_ctx = NULL;
 }
+void swap(int *p,int *q) {
+  int tmp=*p;
+  *p=*q;
+  *q=tmp;
+}
+void BresenhamLine(int X0,int Y0,int X1,int Y1,uint8_t *Y,uint8_t *U,uint8_t *V,int nY,int nU,int nV) {
+  int x0,y0,x1,y1;
+  x0=X0;y0=Y0;x1=X1;y1=Y1;
+  bool steep = abs(y1 - y0) > abs(x1 - x0);
+  int x2,y2;
+  if (steep) {
+    swap(&x0, &y0);
+    swap(&x1, &y1);
+  }
+  if (x0 > x1) {
+    swap(&x0, &x1);
+    swap(&y0, &y1);
+  }
+  int deltax = x1 - x0;
+  int deltay = abs(y1 - y0);
+  int error = deltax / 2;
+  int ystep;
+  int y = y0;
+  if (y0 < y1) {ystep = 1;} else {ystep = -1;}
+  for (int x=x0;x<=x1;x++) {
+    if (steep) { 
+    //plot(y,x);
+      x2=y/2;
+      y2=x/2;
+      Y[x * nY + y]   = WHITEY;
+      U[y2 * nU + x2] = WHITEU;
+      V[y2 * nV + x2] = WHITEV; 
+    } 
+    else { 
+    //plot(x,y); 
+      x2=x/2;
+      y2=y/2;
+      Y[y * nY + x]   = WHITEY;
+      U[y2 * nU + x2] = WHITEU;
+      V[y2 * nV + x2] = WHITEV; 
+    }
+    error = error - deltay;
+    if (error < 0) {
+      y = y + ystep;
+      error = error + deltax;
+    }
+  }
+}
+#define stepx 1
+#define stepy 16
+#define stepw 2
+int BresenhamLineCountY(int xa,int ya,int xb,int yb,uint8_t *Y,uint8_t *U,uint8_t *V,int nY,int nU,int nV,
+                       int *xstart,int *ystart,int *xfinal,int *yfinal) {
+  int x0,y0,x1,y1;
+  x0=xa;y0=ya;x1=xb;y1=yb;
+  bool steep = abs(y1 - y0) > abs(x1 - x0);
+  int x2,y2;
+  int sumWHITEn;
+  if (steep) {
+    swap(&x0, &y0);
+    swap(&x1, &y1);
+  }
+  if (x0 > x1) {
+    swap(&x0, &x1);
+    swap(&y0, &y1);
+  }
+  int deltax = x1 - x0;
+  int deltay = abs(y1 - y0);
+  int error = deltax / 2;
+  int ystep;
+  int y = y0;
+  uint8_t Y0,U0,V0;
+  int Y0A,U0A,V0A;
+  if (y0 < y1) {ystep = 1;} else {ystep = -1;}
+  sumWHITEn=0;
+  *xstart=-1;  *ystart=-1;
+  *xfinal=-1;  *yfinal=-1; 
+  for (int x=x0;x<x1;x++) {
+    if (steep) { 
+    //plot(y,x);
+      x2=y/2;
+      y2=x/2;
+      Y0  = Y[x * nY + y];
+      U0  = U[y2 * nU + x2];
+      V0  = V[y2 * nV + x2];
+      Y0A = Y[x * nY + y + 2];
+      U0A = U[y2 * nU + x2 + 1];
+      V0A = V[y2 * nV + x2 + 1];
+      Y0A = (Y0A+Y0) >> 1;
+      U0A = (U0A+U0) >> 1;
+      V0A = (V0A+V0) >> 1;
+      if(Y0A>WHITEY-56 && U0A<WHITEU+8 && U0A>WHITEU-1 && V0A<WHITEV+1 && V0A>WHITEV-8) {
+        sumWHITEn++;
+        if(*xstart==-1) { *xstart=y; *ystart=x; }
+        *xfinal=y; *yfinal=x;
+      }
+    } 
+    else { 
+    //plot(x,y); 
+      x2=x/2;
+      y2=y/2;
+      Y0 = Y[y * nY + x];
+      U0 = U[y2 * nU + x2];
+      V0 = V[y2 * nV + x2];
+      Y0A = Y[y * nY + x + 2];
+      U0A = U[y2 * nU + x2 + 2];
+      V0A = V[y2 * nV + x2 + 2];
+      Y0A = (Y0A+Y0) >> 1;
+      U0A = (U0A+U0) >> 1;
+      V0A = (V0A+V0) >> 1;
+      if(Y0A>WHITEY-56 && U0A<WHITEU+8 && U0A>WHITEU-1 && V0A<WHITEV+1 && V0A>WHITEV-8) {
+        sumWHITEn++;
+        if(*xstart==-1) {*xstart=x; *ystart=y;}
+        *xfinal=x; *yfinal=y;
+      }
+    }
+    error = error - deltay;
+    if (error < 0) {
+      y = y + ystep;
+      error = error + deltax;
+    }
+  }
+  return sumWHITEn;
+}
+
+int BresenhamLineCountX(int xa,int ya,int xb,int yb,uint8_t *Y,uint8_t *U,uint8_t *V,int nY,int nU,int nV,
+                        int *xstart,int *ystart,int *xfinal,int *yfinal) {
+  int x0,y0,x1,y1;
+  x0=xa;y0=ya;x1=xb;y1=yb;
+  bool steep = abs(y1 - y0) > abs(x1 - x0);
+  int x2,y2;
+  int sumWHITEn;
+  if (steep) {
+    swap(&x0, &y0);
+    swap(&x1, &y1);
+  }
+  if (x0 > x1) {
+    swap(&x0, &x1);
+    swap(&y0, &y1);
+  }
+  int deltax = x1 - x0;
+  int deltay = abs(y1 - y0);
+  int error = deltax / 2;
+  int ystep;
+  int y = y0;
+  uint8_t Y0,U0,V0;
+  int Y0A,U0A,V0A;
+  if (y0 < y1) {ystep = 1;} else {ystep = -1;}
+  sumWHITEn=0;
+  *ystart=-1;
+  *yfinal=-1; 
+  for (int x=x0;x<x1;x++) {
+    if (steep) { 
+    //plot(y,x);
+    //printf("%4d,(%4d,%4d)\n",__LINE__,x,y);
+      x2=y/2;
+      y2=x/2;
+      Y0  = Y[x * nY + y];
+      U0  = U[y2 * nU + x2];
+      V0  = V[y2 * nV + x2];
+      Y0A = Y[x * nY + y + 2];
+      U0A = U[y2 * nU + x2 + 1];
+      V0A = V[y2 * nV + x2 + 1];
+      Y0A = (Y0A+Y0) >> 1;
+      U0A = (U0A+U0) >> 1;
+      V0A = (V0A+V0) >> 1;
+      if(Y0A>WHITEY-56 && U0A<WHITEU+8 && U0A>WHITEU-1 && V0A<WHITEV+1 && V0A>WHITEV-8) {
+        sumWHITEn++;
+        if(*ystart==-1) { *ystart=x; *xstart=y; }
+        *yfinal=x; *xfinal=y;
+      }
+    } 
+    else { 
+    //plot(x,y); 
+    //printf("%4d,(%4d,%4d)\n",__LINE__,x,y);
+      x2=x/2;
+      y2=y/2;
+      Y0 = Y[y * nY + x];
+      U0 = U[y2 * nU + x2];
+      V0 = V[y2 * nV + x2];
+      Y0A = Y[y * nY + x + 2];
+      U0A = U[y2 * nU + x2 + 2];
+      V0A = V[y2 * nV + x2 + 2];
+      Y0A = (Y0A+Y0) >> 1;
+      U0A = (U0A+U0) >> 1;
+      V0A = (V0A+V0) >> 1;
+      if(Y0A>WHITEY-56 && U0A<WHITEU+8 && U0A>WHITEU-1 && V0A<WHITEV+1 && V0A>WHITEV-8) {
+        sumWHITEn++;
+        if(*ystart==-1) {*ystart=y; *xstart=x; }
+         *yfinal=y; *xfinal=x;
+      }
+    }
+    error = error - deltay;
+    if (error < 0) {
+      y = y + ystep;
+      error = error + deltax;
+    }
+  }
+  return sumWHITEn;
+}
+
 #define ALGORITHM0 0
-void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x,int y) {
+void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x,int y,
+                  int *px, int *py) {
   int x0=x,x2;
   int y0=y,y2;
 #if ALGORITHM0
   int Y0,U0,V0,Y1,U1,V1;
   int R0,G0,B0,R1,G1,B1;
 #else
-  int Y0;
+  int Y0 = 0;
+  Y0 = Y0;
 #endif
   char tfname[256];
   freeAll();
   AVFrame *aframe=getFrame(fname);
-  printf("%s(%4d)(%4d,%4d)\n",__FILE__,__LINE__,x,y);
+  printf("%s(%4d)%s(%4d,%4d)\n",__FILE__,__LINE__,fname,x,y);
   x2 = x0/2;
   y2 = y0/2;
+  x0 = x0; y0 = y0; x2 = x2; y2 = y2; 
+#if 0
+
 #if ALGORITHM0
-  Y0=frame->data[0][y0 * frame->linesize[0] + x0];
+  Y0 = aframe->data[0][y0 * aframe->linesize[0] + x0];
   U0 = aframe->data[1][y2 * aframe->linesize[1] + x2];
-  V0 = aframe->data[1][y2 * aframe->linesize[1] + x2];
+  V0 = aframe->data[2][y2 * aframe->linesize[2] + x2];
   R0 = YUV2R(Y0, U0, V0);
   G0 = YUV2G(Y0, U0, V0);
   B0 = YUV2B(Y0, U0, V0);
@@ -1500,7 +1707,7 @@ void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x
 #if ALGORITHM0
       Y1 = aframe->data[0][y * aframe->linesize[0] + x];
       U1 = aframe->data[1][y2 * aframe->linesize[1] + x2];
-      V1 = aframe->data[1][y2 * aframe->linesize[1] + x2];
+      V1 = aframe->data[2][y2 * aframe->linesize[2] + x2];
       R1 = YUV2R(Y1, U1, V1);
       G1 = YUV2G(Y1, U1, V1);
       B1 = YUV2B(Y1, U1, V1);
@@ -1514,6 +1721,122 @@ void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x
       }  
     }
   }
+#endif
+
+  int sumWHITEn,sum1WHITEnmax;
+  int y1WHITEi,y1WHITEj;
+  int yi,yj;
+  int x1start,y1start,x1final,y1final;
+  int x1s,y1s,x1f,y1f;
+  sum1WHITEnmax=0;
+  for (yi = 0; yi < codec_ctx->height; yi+=stepy) {
+    for (yj = 0; yj < codec_ctx->height; yj+=stepy) {
+      sumWHITEn=
+        BresenhamLineCountY(0,yi,2159,yj,aframe->data[0],aframe->data[1],aframe->data[2],
+                           aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
+                           &x1start,&y1start,&x1final,&y1final);
+      if(sum1WHITEnmax<sumWHITEn) {
+        sum1WHITEnmax=sumWHITEn;
+        y1WHITEi=yi;
+        y1WHITEj=yj;
+        x1s=x1start;
+        y1s=y1start;
+        x1f=x1final;
+        y1f=y1final;
+//      printf("%4d,(   0,%4d)-(2159,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,y1WHITEi,y1WHITEj,
+//             x1s,y1s,y1f,x1f,sum1WHITEnmax);
+      }
+    }
+  }
+
+  int sum2WHITEnmax;
+  int x2WHITEi,x2WHITEj;
+  int xi,xj;
+  int ybegin,x2start,y2start,x2final,y2final;
+  int x2s,y2s,x2f,y2f;
+  ybegin=(y1WHITEi+y1WHITEj) >> 1;
+  sum2WHITEnmax=0;
+  for (xi = 0; xi < codec_ctx->width; xi+=stepw) {
+    for (xj = 0; xj < codec_ctx->width; xj+=stepw) {
+      sumWHITEn=
+        BresenhamLineCountX(xi,ybegin,xj,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+                           aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
+                           &x2start,&y2start,&x2final,&y2final);
+      if(sum2WHITEnmax<sumWHITEn) {
+        sum2WHITEnmax=sumWHITEn;
+        x2WHITEi=xi;
+        x2WHITEj=xj;
+        x2s=x2start;
+        y2s=y2start;
+        x2f=x2final;
+        y2f=y2final;
+//      printf("%4d,(%4d,%4d)-(%4d,3839),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x2WHITEi,ybegin,x2WHITEj,
+//             x2s,y2s,x2f,y2f,sum2WHITEnmax);
+      }
+    }
+  }
+  printf("%4d,(   0,%4d)-(2159,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,y1WHITEi,y1WHITEj,
+         x1s,y1s,x1f,y1f,sum1WHITEnmax);
+  printf("%4d,(%4d,%4d)-(%4d,3839),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x2WHITEi,ybegin,x2WHITEj,
+         x2s,y2s,x2f,y2f,sum2WHITEnmax);
+//toolbox2.cpp(1686)../VID20260902080414/x0031.jpg( 793,3480)
+//1777,(   0,2192)-(2159,2096),( 604,2165)-(1657,2118),   1025
+//1779,(1610,2144)-(2146,3839),(1610,2144)-(1658,2295),    152
+//(xstart,yWHITEi) ---- (xfinal,yWHITEj)  (xWHITEi,ystart)         
+//                                                \\               |                               
+//                                                 \\              |
+//                                          (xWHITEj,yfinal)
+  int D=(x1f-x1s)*(y2f-y2s)-(x2f-x2s)*(y1f-y1s);
+  *px=-1; *py=-1;
+  if(x1s!=-1 && x1f!=-1 && x2s!=-1 && x2f!=-1 && y1s!=-1 && y1f!=-1 && y1s!=-1 && y1f!=-1 && D!=0) {
+    int N1=x1s*y1f-x1f*y1s;
+    int N2=x2s*y2f-x2f*y2s;
+    int Dx=N2*(x1f-x1s)-N1*(x2f-x2s);
+    int Dy=N2*(y1f-y1s)-N1*(y2f-y2s);
+    double xd=(double)Dx/D;
+    double yd=(double)Dy/D;
+    *px=static_cast<int>(xd);
+    *py=static_cast<int>(yd);
+    printf("%4d(%4d,%4d)(%10.4f,%10.4f)\n",__LINE__,*px,*py,xd,yd);
+  
+
+    int sum3WHITEnmax;
+    int x3WHITEj;
+    int xbegin,ystop,x3start,y3start,x3final,y3final;
+    int x3s,y3s,x3f,y3f;
+    xbegin=*px;ystop=*py;
+    sum3WHITEnmax=0;
+    for (xj = xbegin; xj < codec_ctx->width; xj+=stepw) {
+      sumWHITEn=
+        BresenhamLineCountX(xj,0,xbegin,ystop,aframe->data[0],aframe->data[1],aframe->data[2],
+                           aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
+                           &x3start,&y3start,&x3final,&y3final);
+      if(sum3WHITEnmax<sumWHITEn) {
+        sum3WHITEnmax=sumWHITEn;
+        x3WHITEj=xj;
+        x3s=x3start;
+        y3s=y3start;
+        x3f=x3final;
+        y3f=y3final;
+        printf("%4d,(%4d,   0)-(%4d,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x3WHITEj,xbegin,ystop,
+               x3s,y3s,x3f,y3f,sum3WHITEnmax);
+      }
+    }
+    printf("%4d,(%4d,   0)-(%4d,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x3WHITEj,xbegin,ystop,
+           x3s,y3s,x3f,y3f,sum3WHITEnmax);
+
+    BresenhamLine(x3WHITEj,0,xbegin,ystop,aframe->data[0],aframe->data[1],aframe->data[2],
+                  aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
+
+  }
+
+  BresenhamLine(0,y1WHITEi,2160-1,y1WHITEj,aframe->data[0],aframe->data[1],aframe->data[2],
+                aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
+
+
+  BresenhamLine(x2WHITEi,ybegin,x2WHITEj,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+                aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
+
 //sprintf(tfname,%s/tmp.jpg",fDirectory);
   sprintf(tfname,"img/x%04dt.jpg",frame_index);
   savePicture(aframe, tfname);
@@ -1914,8 +2237,203 @@ void callext(const char *exename) {
     printf("%s(%d) %d,External command failed or returned non-zero.\n",__FILE__,__LINE__,result);
   }
 }
-void act2(const char *fDirectory,int fi[])
+AVFrame *getFrame2(const char *filename2,int *width2,int *height2) {
+  AVFormatContext *format_ctx2 = NULL;
+  AVCodecContext *codec_ctx2 = NULL;
+  const AVCodec *codec2 = NULL;
+  AVPacket *packet2 = NULL;
+  AVFrame *frame2 = NULL;
+  if(format_ctx2) avformat_close_input(&format_ctx2);
+  packet2 = av_packet_alloc();
+  frame2  = av_frame_alloc();
+  //1. Open the input file
+  if (avformat_open_input(&format_ctx2, filename2, NULL, NULL) < 0) {
+    fprintf(stderr, "Could not open source file %s\n", filename2);
+    return NULL;
+  }
+  //2. Find stream information
+  if (avformat_find_stream_info(format_ctx2, NULL) < 0) {
+    fprintf(stderr, "Could not find stream information\n");
+    return NULL;
+  }
+  //3. Find the video stream (JPG is treated as a single-frame video stream)
+  int stream_index2 = -1;
+  for (unsigned int i = 0; i < format_ctx2->nb_streams; i++) {
+    if (format_ctx2->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+      stream_index2 = i;
+      break;
+    }
+  }
+  if (stream_index2 == -1) {
+    fprintf(stderr, "Could not find video stream in file\n");
+    return NULL;
+  }
+  //4. Find decoder for the JPG stream
+  AVCodecParameters *codec_params = format_ctx2->streams[stream_index2]->codecpar;
+  codec2 = avcodec_find_decoder(codec_params->codec_id);
+  if (!codec2) {
+    fprintf(stderr, "Failed to find decoder\n");
+    return NULL;
+  }
+  //5. Allocate and initialize codec context
+  codec_ctx2 = avcodec_alloc_context3(codec2);
+  if (avcodec_parameters_to_context(codec_ctx2, codec_params) < 0) {
+    fprintf(stderr, "Failed to copy codec params to context\n");
+    return NULL;
+  }
+  *width2 =codec_ctx2->width;
+  *height2=codec_ctx2->height;
+  if (avcodec_open2(codec_ctx2, codec2, NULL) < 0) {
+    fprintf(stderr, "Failed to open codec\n");
+    return NULL;
+  }
+  // 6. Read frame from stream
+  int frame_finished = 0;
+  while (av_read_frame(format_ctx2, packet2) >= 0) {
+    if (packet2->stream_index == stream_index2) {
+    //Send the packet to the decoder
+      if (avcodec_send_packet(codec_ctx2, packet2) >= 0) {
+      //Receive the decoded frame
+        int ret = avcodec_receive_frame(codec_ctx2, frame2);
+        if (ret == 0) {
+          frame_finished = 1;
+          printf("Successfully decoded frame!\n");
+          printf("Width: %d, Height: %d, Pixel Format: %d\n", 
+                 frame2->width, frame2->height, frame2->format);
+          break;
+        }
+      }
+    }
+    av_packet_unref(packet2);
+  }
+  //Clean up
+#if 0
+  av_frame_free(&frame2);
+  av_packet_free(&packet2);
+  avcodec_free_context(&codec_ctx2);
+  avformat_close_input(&format_ctx2);
+#endif
+  if (!frame_finished) {
+    fprintf(stderr, "Failed to decode frame from JPG\n");
+    return NULL;
+  }
+  return frame2;
+}
+//#define iabs(__x) ((__x) >= 0 ? (__x) : (-__x))
+#define aY(a,x,y) aframe##a->data[0][(y) *   aframe##a->linesize[0] + (x)]
+#define aU(a,x,y) aframe##a->data[1][(y) *   aframe##a->linesize[1] + (x)]
+#define aV(a,x,y) aframe##a->data[2][(y) *   aframe##a->linesize[2] + (x)]
+#define BLOCKX 360
+#define BLOCKY 360
+#define DELTAX 2
+#define DELTAY 2
+#define STEPSIZEX 20
+#define STEPSIZEY 20
+//x0...x0+240,y0...y0+480
+void findMINsum(int x0,int y0,AVFrame *aframe0,AVFrame *aframe1,AVFrame *aframe2) {
+  int sumY,sumYmin,sumWHITEn,sumWHITEnmax;
+  int x,y,x1,y1,x2,y2,Xmin,Ymin,xWHITE,yWHITE,Y0,U0,V0;
+  sumYmin=1<<23;
+  sumWHITEnmax=0;
+  printf("%4d(%4d,%4d)\n",__LINE__,x0,y0);
+  for(y1=0;y1<3840-BLOCKY;y1+=STEPSIZEY) {
+    for(x1=0;x1<2160-BLOCKX;x1+=STEPSIZEX) {
+      sumY=0;
+      sumWHITEn=0;
+      for(y=0;y<BLOCKY;y+=DELTAY) { //block
+        for(x=0;x<BLOCKX;x+=DELTAX) {
+          sumY+=abs(aY(0,x0+x,y0+y)-aY(1,x1+x,y1+y));
+          x2=(x1+x)/2;
+          y2=(y1+y)/2;
+          Y0=aY(1,x1+x,y1+y);
+          U0=aU(1,x2,y2);
+          V0=aV(1,x2,y2);
+          if(Y0>WHITEU-55 && U0>WHITEU-10 && V0<WHITEV+10 && V0>WHITEV-10) {
+            sumWHITEn++;
+          }
+        }
+      }
+      if(sumY<=sumYmin) {
+        Xmin=x1;Ymin=y1;sumYmin=sumY;
+        printf("min %4d(%4d,%4d),%7d\n",__LINE__,Xmin,Ymin,sumYmin);
+      }
+      if(sumWHITEn>sumWHITEnmax) {
+        sumWHITEnmax=sumWHITEn;
+        xWHITE=x1;yWHITE=y1;
+        printf("max %4d(%4d,%4d),%7d\n",__LINE__,xWHITE,yWHITE,sumWHITEnmax);
+      }
+    }
+  }
+  sumYmin=1<<23;
+  for(y1=0;y1<3840-BLOCKY;y1+=STEPSIZEY) {
+    for(x1=0;x1<2160-BLOCKX;x1+=STEPSIZEX) {
+      sumY=0;
+      for(y=0;y<BLOCKY;y+=DELTAY) { //block
+        for(x=0;x<BLOCKX;x+=DELTAX) {
+          sumY+=abs(aY(0,x0+x,y0+y)-aY(2,x1+x,y1+y));
+        }
+      }
+      if(sumY<sumYmin) {
+        Xmin=x1;Ymin=y1;sumYmin=sumY;
+        printf("%4d(%4d,%4d),%7d\n",__LINE__,Xmin,Ymin,sumYmin);
+      }
+    }
+  }
+}
+void act2(const char *fDirectory,int fi[],int x,int y)
 {
-//??????????
+  int width2[3];
+  int height2[3];
+  char fname[256];
+  int Y[3],U[3],V[3];
+  int x2,y2;
   printf("arithmetic category theory](%s)%3d,%3d,%3d\n",fDirectory,fi[0],fi[1],fi[2]);
+  sprintf(fname,"%s/x%04d.jpg",fDirectory,fi[0]);
+  printf("%s(%4d) (%4d,%4d) %s\n",__FILE__,__LINE__,x,y,fname);
+  AVFrame *aframe0=getFrame2(fname,&width2[0],&height2[0]);
+  x2=x/2;y2=y/2;
+  if(x>=0 && y>0 && x<width2[0] && y<height2[0]) {
+    Y[0]=aY(0,x,y);
+    U[0]=aU(0,x2,y2);
+    V[0]=aV(0,x2,y2);
+//  Y[0]=aframe0->data[0][y *   aframe0->linesize[0] + x];
+//  U[0]=aframe0->data[1][y/2 * aframe0->linesize[1] + x/2];
+//  V[0]=aframe0->data[2][y/2 * aframe0->linesize[2] + x/2];
+  }
+  else {
+    printf("%s(%4d) (%4d,%4d)\n",__FILE__,__LINE__,x,y);
+  }
+  sprintf(fname,"%s/x%04d.jpg",fDirectory,fi[1]); 
+  AVFrame *aframe1=getFrame2(fname,&width2[1],&height2[1]);
+  if(x>=0 && y>0 && x<width2[1] && y<height2[1]) {
+    Y[1]=aY(1,x,y);
+    U[1]=aU(1,x2,y2);
+    V[1]=aV(1,x2,y2);
+//  Y[1]=aframe1->data[0][y *   aframe1->linesize[0] + x];
+//  U[1]=aframe1->data[1][y/2 * aframe1->linesize[1] + x/2];
+//  V[1]=aframe1->data[2][y/2 * aframe1->linesize[2] + x/2];
+  }
+  else {
+    printf("%s(%4d) (%4d,%4d)\n",__FILE__,__LINE__,x,y);
+  }
+  sprintf(fname,"%s/x%04d.jpg",fDirectory,fi[2]); 
+  AVFrame *aframe2=getFrame2(fname,&width2[2],&height2[2]);
+  if(x>=0 && y>0 && x<width2[2] && y<height2[2]) {
+    Y[2]=aY(2,x,y);
+    U[2]=aU(2,x2,y2);
+    V[2]=aV(2,x2,y2);
+//  Y[2]=aframe2->data[0][y *   aframe2->linesize[0] + x];
+//  U[2]=aframe2->data[1][y/2 * aframe2->linesize[1] + x/2];
+//  V[2]=aframe2->data[2][y/2 * aframe2->linesize[2] + x/2];
+  }
+  else {
+    printf("%s(%4d),(%4d,%4d)\n",__FILE__,__LINE__,x,y);
+  }
+  printf("%s,%4d(%4d,%4d),(%4d,%4d,%4d),(%4d,%4d,%4d),(%4d,%4d,%4d)\n",__FILE__,__LINE__,x,y,
+         Y[0],U[0],V[0],Y[1],U[1],V[1],Y[2],U[2],V[2]);
+
+//findMINsum(1420,1506,aframe0,aframe1,aframe2);
+//step 1: find a refernce kit
+//step 2: find 3 views shifting x,y
+  findMINsum(x,y,aframe0,aframe1,aframe2);
 }

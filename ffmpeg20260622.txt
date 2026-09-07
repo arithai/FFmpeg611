@@ -1,5 +1,31 @@
 
+20260903
+ffmpeg -i VID20260902080414_r2.mp4 -vf "transpose=1" -metadata:s:v:0 rotate=0 -c:a copy output.mp4
+VID20260902080414_r2
+./dfvmux3diff.exe ./VID20260902080414.mp4 ./VID20260902080414_r2.mp4
 
+11584
+11594
+20260902
+2020( 930,1500), 311552
+2035( 970,1370), 352984
+  findMINsum(1420,1506,aframe0,aframe1,aframe2);
+
+  findMINsum(946,1540,aframe0,aframe1,aframe2);
+2020( 490,1550), 620484
+2035( 480,1440),1198925
+
+2035( 750,1160), 780990 <====
+
+2035(1030, 490),1206318
+2020( 770,1310), 507264 <===
+  findMINsum(1255,1280,aframe0,aframe1,aframe2);
+
+0 [main] ffmpeg (8092) child_copy: cygheap read copy failed, 
+0x0..0x8000270F0, done 0, windows pid 8092, Win32 error 299
+
+ffmpeg -i VID20260902080331.mp4 VID20260902080331/x%04d.jpg
+ffmpeg -i VID20260902080414.mp4 VID20260902080414/x%04d.jpg
 20260831
 Could not open source file ../VID20260825123112/x0080.jpg
 Segmentation fault
