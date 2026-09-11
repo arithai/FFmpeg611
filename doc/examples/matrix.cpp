@@ -1186,7 +1186,7 @@ void col_perm_vector4(int D[4],vector_t *v) { //E
   v->data[D[0]]=tmp[0];
   v->data[D[1]]=tmp[1];
   v->data[D[2]]=tmp[2];
-  v->data[D[3]]=tmp[3];
+  v->data[D[3]]=tmp[3];xx
   return;
 }
 ////////////////////////////////////////////////

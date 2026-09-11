@@ -136,3 +136,4 @@ void row_perm_vector4(int D[4],vector_t *v);
 void col_perm_vector4(int D[4],vector_t *v);
 matrix_t *computeBM_from_BLUE4(matrix_t *L,matrix_t *U,int *B,int *E,
   vector_t *v1,vector_t *v2,vector_t *v3,vector_t *v4);
+

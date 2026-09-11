@@ -76,6 +76,9 @@ extern "C" {
 #define GLOBAL_WIDTH  640*6
 #define GLOBAL_HEIGHT 360*6
 
+const int mp4width  = 2160;
+const int mp4height = 3840;
+
 typedef struct STPOINT {
   unsigned short x;  //0..3840-1
   unsigned short y;  //0..2160-1
@@ -1473,9 +1476,10 @@ void swap(int *p,int *q) {
   *p=*q;
   *q=tmp;
 }
-void BresenhamLine(int X0,int Y0,int X1,int Y1,uint8_t *Y,uint8_t *U,uint8_t *V,int nY,int nU,int nV) {
+
+void BresenhamLine(int xa,int ya,int xb,int yb,uint8_t *Y,uint8_t *U,uint8_t *V,int nY,int nU,int nV) {
   int x0,y0,x1,y1;
-  x0=X0;y0=Y0;x1=X1;y1=Y1;
+  x0=(xa/2)*2;y0=(ya/2)*2;x1=(xb/2)*2;y1=(yb/2)*2;
   bool steep = abs(y1 - y0) > abs(x1 - x0);
   int x2,y2;
   if (steep) {
@@ -1492,37 +1496,150 @@ void BresenhamLine(int X0,int Y0,int X1,int Y1,uint8_t *Y,uint8_t *U,uint8_t *V,
   int ystep;
   int y = y0;
   if (y0 < y1) {ystep = 1;} else {ystep = -1;}
-  for (int x=x0;x<=x1;x++) {
-    if (steep) { 
-    //plot(y,x);
-      x2=y/2;
-      y2=x/2;
-      Y[x * nY + y]   = WHITEY;
+  if(x0!=x1) {
+    for (int x=x0;x<=x1;x++) {
+      if (steep) { 
+      //plot(y,x);
+        x2=y/2;
+        y2=x/2;
+      } 
+      else { 
+      //plot(x,y); 
+        x2=x/2;
+        y2=y/2;
+      }
+      Y[ 2*y2 * nY + 2*x2     ]   = WHITEY;
+      Y[ 2*y2 * nY + 2*x2+1   ]   = WHITEY;
+      Y[(2*y2+1) * nY + 2*x2  ]   = WHITEY;
+      Y[(2*y2+1) * nY + 2*x2+1]   = WHITEY;
       U[y2 * nU + x2] = WHITEU;
       V[y2 * nV + x2] = WHITEV; 
-    } 
-    else { 
-    //plot(x,y); 
-      x2=x/2;
-      y2=y/2;
-      Y[y * nY + x]   = WHITEY;
-      U[y2 * nU + x2] = WHITEU;
-      V[y2 * nV + x2] = WHITEV; 
+      error = error - deltay;
+      if (error < 0) {
+        y = y + ystep;
+        error = error + deltax;
+      }
     }
-    error = error - deltay;
-    if (error < 0) {
-      y = y + ystep;
-      error = error + deltax;
+  }
+  else {
+    if (steep)   { y2=x0/2; }
+    else { x2=x0/2; }
+    for (int y=y0;y<=y1;y++) {
+      if (steep) { x2=y/2; }
+      else { x2=x0/2; }
+      Y[ 2*y2 * nY + 2*x2     ]   = WHITEY;
+      Y[ 2*y2 * nY + 2*x2+1   ]   = WHITEY;
+      Y[(2*y2+1) * nY + 2*x2  ]   = WHITEY;
+      Y[(2*y2+1) * nY + 2*x2+1]   = WHITEY;
+      U[y2 * nU + x2] = WHITEU;
+      V[y2 * nV + x2] = WHITEV; 
     }
   }
 }
+
+#define ALGORITHM0 0
+#define ALGORITHM1 1
+#define GMARGINL 200
+#define BMARGINH 60
+void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x,int y,
+                  int *px, int *py) {
+  int xa,x0=x,x2;
+  int ya,y0=y,y2;
+#if ALGORITHM0 || ALGORITHM1
+  int Y0,U0,V0,Y1,U1,V1;
+  int R0,G0,B0,R1,G1,B1;
+#else
+  int Y0 = 0;
+  Y0 = Y0;
+#endif
+  char tfname[256];
+  freeAll();
+  AVFrame *aframe=getFrame(fname);
+  printf("%s(%4d)%s(%4d,%4d)\n",__FILE__,__LINE__,fname,x,y);
+  x2 = x0/2;
+  y2 = y0/2;
+  x0 = x2*2;
+  y0 = y2*2;
+#if 1
+
+#if ALGORITHM0 || ALGORITHM1 
+  Y0  = (aframe->data[0][2*y2     * aframe->linesize[0] + 2*x2]+
+         aframe->data[0][2*y2     * aframe->linesize[0] + 2*x2+1 ]+
+         aframe->data[0][(2*y2+1) * aframe->linesize[0] + 2*x2   ]+
+         aframe->data[0][(2*y2+1) * aframe->linesize[0] + 2*x2+1 ])/4;
+  U0 = aframe->data[1][y2 * aframe->linesize[1] + x2];
+  V0 = aframe->data[2][y2 * aframe->linesize[2] + x2];
+  R0 = YUV2R(Y0, U0, V0);
+  G0 = YUV2G(Y0, U0, V0);
+  B0 = YUV2B(Y0, U0, V0);
+  R0 = R0; B0 = B0; G0=G0;
+#else
+  Y0=frame->data[0][y0 * frame->linesize[0] + x0];
+#endif
+  for (ya = 0; ya < codec_ctx->height; ya+=2) {
+    y2 = ya/2;
+    for (xa = 0; xa < codec_ctx->width; xa+=2) {
+      x2 = xa/2;
+#if ALGORITHM0 || ALGORITHM1
+      Y1  = (aframe->data[0][2*y2     * aframe->linesize[0] + 2*x2]+
+             aframe->data[0][2*y2     * aframe->linesize[0] + 2*x2+1 ]+
+             aframe->data[0][(2*y2+1) * aframe->linesize[0] + 2*x2   ]+
+             aframe->data[0][(2*y2+1) * aframe->linesize[0] + 2*x2+1 ])/4;
+      U1 = aframe->data[1][y2 * aframe->linesize[1] + x2];
+      V1 = aframe->data[2][y2 * aframe->linesize[2] + x2];
+      R1 = YUV2R(Y1, U1, V1);
+      G1 = YUV2G(Y1, U1, V1);
+      B1 = YUV2B(Y1, U1, V1);
+      R1 = R1; B1 = B1; 
+#if ALGORITHM0 
+      if( abs(R1-R0)+abs(G1-G0)+abs(B1-B0) > 100 )  {
+#else
+      int r = (int) sqrt(1.0*(xa-x0)*(xa-x0)+(ya-y0)*(ya-y0));
+//    if( (abs(G1-G0)+abs(B1-B0) > 40)  || (r > 600))  {
+      if ( !( G1>GMARGINL && B1<BMARGINH )  || (r > 600) ) {
+//      if(r<40) {
+//        printf("%4d(%4d,%4d)(%4d,%4d)1(%3d,%3d,%3d)0(%3d,%3d,%3d)G(%3d,%3d)B(%3d,%3d)(%5d,%5d)\n",__LINE__,x0,y0,xa,ya,
+//               Y1,U1,V1,Y0,U0,V0,G1,G0,B1,B0,(abs(G1-G0)+abs(B1-B0)),r);
+//      }
+#endif
+#else
+      if( abs(aframe->data[0][ya * aframe->linesize[0] + xa]-Y0) > 20 ) {
+#endif
+        aframe->data[0][2 * y2 * aframe->linesize[0]     + 2*x2]   = BLACKY;
+        aframe->data[0][2 * y2 * aframe->linesize[0]     + 2*x2+1] = BLACKY;
+        aframe->data[0][(2 * y2+1) * aframe->linesize[0] + 2*x2]   = BLACKY;
+        aframe->data[0][(2 * y2+1) * aframe->linesize[0] + 2*x2+1] = BLACKY;
+        aframe->data[1][y2 * aframe->linesize[1] + x2]             = BLACKU;
+        aframe->data[2][y2 * aframe->linesize[2] + x2]             = BLACKV; 
+      }
+      else {
+        aframe->data[0][2 * y2 * aframe->linesize[0]     + 2*x2]   = GREENY;
+        aframe->data[0][2 * y2 * aframe->linesize[0]     + 2*x2+1] = GREENY;
+        aframe->data[0][(2 * y2+1) * aframe->linesize[0] + 2*x2]   = GREENY;
+        aframe->data[0][(2 * y2+1) * aframe->linesize[0] + 2*x2+1] = GREENY;
+        aframe->data[1][y2 * aframe->linesize[1] + x2]             = GREENU;
+        aframe->data[2][y2 * aframe->linesize[2] + x2]             = GREENV; 
+      }  
+    }
+  }
+#endif
+
+//BresenhamLine(0,0,2159,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+//              aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
+ 
+//sprintf(tfname,%s/tmp.jpg",fDirectory);
+  sprintf(tfname,"img/x%04dt.jpg",frame_index);
+  savePicture(aframe, tfname);
+  aframe=aframe;
+}
+
 #define stepx 1
 #define stepy 16
 #define stepw 2
 int BresenhamLineCountY(int xa,int ya,int xb,int yb,uint8_t *Y,uint8_t *U,uint8_t *V,int nY,int nU,int nV,
                        int *xstart,int *ystart,int *xfinal,int *yfinal) {
   int x0,y0,x1,y1;
-  x0=xa;y0=ya;x1=xb;y1=yb;
+  x0=(xa/2)*2;y0=(ya/2)*2;x1=(xb/2)*2;y1=(yb/2)*2;
   bool steep = abs(y1 - y0) > abs(x1 - x0);
   int x2,y2;
   int sumWHITEn;
@@ -1544,16 +1661,23 @@ int BresenhamLineCountY(int xa,int ya,int xb,int yb,uint8_t *Y,uint8_t *U,uint8_
   if (y0 < y1) {ystep = 1;} else {ystep = -1;}
   sumWHITEn=0;
   *xstart=-1;  *ystart=-1;
-  *xfinal=-1;  *yfinal=-1; 
-  for (int x=x0;x<x1;x++) {
-    if (steep) { 
-    //plot(y,x);
-      x2=y/2;
-      y2=x/2;
-      Y0  = Y[x * nY + y];
+  *xfinal=-1;  *yfinal=-1;
+  if(x0<x1) {
+    for (int x=x0;x<x1;x++) {
+      if (steep) { 
+      //plot(y,x);
+        x2=y/2;
+        y2=x/2;
+      } 
+      else { 
+      //plot(x,y); 
+        x2=x/2;
+        y2=y/2;
+      }
+      Y0  = Y[y2*2 * nY + x2];
       U0  = U[y2 * nU + x2];
       V0  = V[y2 * nV + x2];
-      Y0A = Y[x * nY + y + 2];
+      Y0A = Y[y2*2 * nY + x2*2 + 1];
       U0A = U[y2 * nU + x2 + 1];
       V0A = V[y2 * nV + x2 + 1];
       Y0A = (Y0A+Y0) >> 1;
@@ -1561,33 +1685,44 @@ int BresenhamLineCountY(int xa,int ya,int xb,int yb,uint8_t *Y,uint8_t *U,uint8_
       V0A = (V0A+V0) >> 1;
       if(Y0A>WHITEY-56 && U0A<WHITEU+8 && U0A>WHITEU-1 && V0A<WHITEV+1 && V0A>WHITEV-8) {
         sumWHITEn++;
-        if(*xstart==-1) { *xstart=y; *ystart=x; }
-        *xfinal=y; *yfinal=x;
+        if(*xstart==-1) { *xstart=x2*2; *ystart=y2*2; }
+        *xfinal=x2*2; *yfinal=y2*2;
       }
+      error = error - deltay;
+      if (error < 0) {
+        y = y + ystep;
+        error = error + deltax;
+      }
+    }
+  }
+  else {
+    if (steep) { 
+      y2=x0/2;
     } 
     else { 
-    //plot(x,y); 
-      x2=x/2;
-      y2=y/2;
-      Y0 = Y[y * nY + x];
-      U0 = U[y2 * nU + x2];
-      V0 = V[y2 * nV + x2];
-      Y0A = Y[y * nY + x + 2];
-      U0A = U[y2 * nU + x2 + 2];
-      V0A = V[y2 * nV + x2 + 2];
+      x2=x0/2;
+    }
+    for (int y=y0;y<y1;y++) {
+      if (steep) { 
+        x2=y/2;
+      } 
+      else { 
+        y2=y/2;
+      }
+      Y0  = Y[y2*2 * nY + x2];
+      U0  = U[y2 * nU + x2];
+      V0  = V[y2 * nV + x2];
+      Y0A = Y[y2*2 * nY + x2*2 + 1];
+      U0A = U[y2 * nU + x2 + 1];
+      V0A = V[y2 * nV + x2 + 1];
       Y0A = (Y0A+Y0) >> 1;
       U0A = (U0A+U0) >> 1;
       V0A = (V0A+V0) >> 1;
       if(Y0A>WHITEY-56 && U0A<WHITEU+8 && U0A>WHITEU-1 && V0A<WHITEV+1 && V0A>WHITEV-8) {
         sumWHITEn++;
-        if(*xstart==-1) {*xstart=x; *ystart=y;}
-        *xfinal=x; *yfinal=y;
+        if(*xstart==-1) { *xstart=x2*2; *ystart=y2*2; }
+        *xfinal=x2*2; *yfinal=y2*2;
       }
-    }
-    error = error - deltay;
-    if (error < 0) {
-      y = y + ystep;
-      error = error + deltax;
     }
   }
   return sumWHITEn;
@@ -1596,7 +1731,7 @@ int BresenhamLineCountY(int xa,int ya,int xb,int yb,uint8_t *Y,uint8_t *U,uint8_
 int BresenhamLineCountX(int xa,int ya,int xb,int yb,uint8_t *Y,uint8_t *U,uint8_t *V,int nY,int nU,int nV,
                         int *xstart,int *ystart,int *xfinal,int *yfinal) {
   int x0,y0,x1,y1;
-  x0=xa;y0=ya;x1=xb;y1=yb;
+  x0=(xa/2)*2;y0=(ya/2)*2;x1=(xb/2)*2;y1=(yb/2)*2;
   bool steep = abs(y1 - y0) > abs(x1 - x0);
   int x2,y2;
   int sumWHITEn;
@@ -1619,16 +1754,25 @@ int BresenhamLineCountX(int xa,int ya,int xb,int yb,uint8_t *Y,uint8_t *U,uint8_
   sumWHITEn=0;
   *ystart=-1;
   *yfinal=-1; 
-  for (int x=x0;x<x1;x++) {
-    if (steep) { 
-    //plot(y,x);
-    //printf("%4d,(%4d,%4d)\n",__LINE__,x,y);
-      x2=y/2;
-      y2=x/2;
-      Y0  = Y[x * nY + y];
+  if(x0<x1) {
+    for (int x=x0;x<x1;x++) {
+      if (steep) { 
+      //plot(y,x);
+      //printf("%4d,(%4d,%4d)\n",__LINE__,x,y);
+        x2=y/2;
+        y2=x/2;
+      } 
+      else { 
+      //plot(x,y); 
+      //printf("%4d,(%4d,%4d)\n",__LINE__,x,y);
+        x2=x/2;
+        y2=y/2;
+      }
+    //printf("%4d(%4d,%4d)\n",__LINE__,x2,y2);
+      Y0  = Y[y2*2 * nY + x2*2];
       U0  = U[y2 * nU + x2];
       V0  = V[y2 * nV + x2];
-      Y0A = Y[x * nY + y + 2];
+      Y0A = Y[y2*2 * nY + x2*2 + 1];
       U0A = U[y2 * nU + x2 + 1];
       V0A = V[y2 * nV + x2 + 1];
       Y0A = (Y0A+Y0) >> 1;
@@ -1636,49 +1780,261 @@ int BresenhamLineCountX(int xa,int ya,int xb,int yb,uint8_t *Y,uint8_t *U,uint8_
       V0A = (V0A+V0) >> 1;
       if(Y0A>WHITEY-56 && U0A<WHITEU+8 && U0A>WHITEU-1 && V0A<WHITEV+1 && V0A>WHITEV-8) {
         sumWHITEn++;
-        if(*ystart==-1) { *ystart=x; *xstart=y; }
-        *yfinal=x; *xfinal=y;
+        if(*ystart==-1) { *ystart=y2*2; *xstart=x2*2; }
+        *yfinal=y2*2; *xfinal=x2*2;
       }
+      error = error - deltay;
+      if (error < 0) {
+        y = y + ystep;
+        error = error + deltax;
+      }
+    }
+  }
+  else {
+    if (steep) { 
+      y2=x0/2;
     } 
     else { 
-    //plot(x,y); 
-    //printf("%4d,(%4d,%4d)\n",__LINE__,x,y);
-      x2=x/2;
-      y2=y/2;
-      Y0 = Y[y * nY + x];
-      U0 = U[y2 * nU + x2];
-      V0 = V[y2 * nV + x2];
-      Y0A = Y[y * nY + x + 2];
-      U0A = U[y2 * nU + x2 + 2];
-      V0A = V[y2 * nV + x2 + 2];
+      x2=x0/2;
+    }
+    for (int y=y0;y<y1;y++) {
+      if (steep) { 
+        x2=y/2;
+      } 
+      else { 
+        y2=y/2;
+      }
+      Y0  = Y[y2*2 * nY + x2*2];
+      U0  = U[y2 * nU + x2];
+      V0  = V[y2 * nV + x2];
+      Y0A = Y[y2*2 * nY + x2*2 + 1];
+      U0A = U[y2 * nU + x2 + 1];
+      V0A = V[y2 * nV + x2 + 1];
       Y0A = (Y0A+Y0) >> 1;
       U0A = (U0A+U0) >> 1;
       V0A = (V0A+V0) >> 1;
       if(Y0A>WHITEY-56 && U0A<WHITEU+8 && U0A>WHITEU-1 && V0A<WHITEV+1 && V0A>WHITEV-8) {
         sumWHITEn++;
-        if(*ystart==-1) {*ystart=y; *xstart=x; }
-         *yfinal=y; *xfinal=x;
+        if(*ystart==-1) { *ystart=y2*2; *xstart=x2*2; }
+        *yfinal=y2*2; *xfinal=x2*2;
       }
     }
-    error = error - deltay;
-    if (error < 0) {
-      y = y + ystep;
-      error = error + deltax;
+  }
+  return sumWHITEn;
+}
+//set Y low
+int BresenhamLineCountXm(int xa,int ya,int xb,int yb,uint8_t *Y,uint8_t *U,uint8_t *V,int nY,int nU,int nV,
+                        int *xstart,int *ystart,int *xfinal,int *yfinal) {
+  int x0,y0,x1,y1;
+  x0=(xa/2)*2;y0=(ya/2)*2;x1=(xb/2)*2;y1=(yb/2)*2;
+  bool steep = abs(y1 - y0) > abs(x1 - x0);
+  int x2,y2;
+  int sumWHITEn;
+  if (steep) {
+    swap(&x0, &y0);
+    swap(&x1, &y1);
+  }
+  if (x0 > x1) {
+    swap(&x0, &x1);
+    swap(&y0, &y1);
+  }
+  int deltax = x1 - x0;
+  int deltay = abs(y1 - y0);
+  int error = deltax / 2;
+  int ystep;
+  int y = y0;
+  uint8_t Y0,U0,V0;
+  int Y0A,U0A,V0A;
+  if (y0 < y1) {ystep = 1;} else {ystep = -1;}
+  sumWHITEn=0;
+  *ystart=-1;
+  *yfinal=-1; 
+  if(x0<x1) {
+    for (int x=x0;x<x1;x++) {
+      if (steep) { 
+      //plot(y,x);
+      //printf("%4d,(%4d,%4d)\n",__LINE__,x,y);
+        x2=y/2;
+        y2=x/2;
+      } 
+      else { 
+      //plot(x,y); 
+      //printf("%4d,(%4d,%4d)\n",__LINE__,x,y);
+        x2=x/2;
+        y2=y/2;
+      }
+      Y0  = Y[y2*2 * nY + x2*2];
+      U0  = U[y2 * nU + x2];
+      V0  = V[y2 * nV + x2];
+      Y0A = Y[y2*2 * nY + x2*2 + 1];
+      U0A = U[y2 * nU + x2 + 1];
+      V0A = V[y2 * nV + x2 + 1];
+      Y0A = (Y0A+Y0) >> 1;
+      U0A = (U0A+U0) >> 1;
+      V0A = (V0A+V0) >> 1;
+      if(Y0A>WHITEY-96 && U0A<WHITEU+8 && U0A>WHITEU-1 && V0A<WHITEV+1 && V0A>WHITEV-8) {
+        sumWHITEn++;
+        if(*ystart==-1) { *ystart=y2*2; *xstart=x2*2; }
+        *yfinal=y2*2; *xfinal=x2*2;
+      }
+      error = error - deltay;
+      if (error < 0) {
+        y = y + ystep;
+        error = error + deltax;
+      }
+    }
+  }
+  else {
+    if (steep) { 
+      y2=x0/2;
+    } 
+    else { 
+      x2=x0/2;
+    }
+    for (int y=y0;y<y1;y++) {
+      if (steep) { 
+        x2=y/2;
+      } 
+      else { 
+        y2=y/2;
+      }
+      Y0  = Y[y2*2 * nY + x2*2];
+      U0  = U[y2 * nU + x2];
+      V0  = V[y2 * nV + x2];
+      Y0A = Y[y2*2 * nY + x2*2 + 1];
+      U0A = U[y2 * nU + x2 + 1];
+      V0A = V[y2 * nV + x2 + 1];
+      Y0A = (Y0A+Y0) >> 1;
+      U0A = (U0A+U0) >> 1;
+      V0A = (V0A+V0) >> 1;
+      if(Y0A>WHITEY-96 && U0A<WHITEU+8 && U0A>WHITEU-1 && V0A<WHITEV+1 && V0A>WHITEV-8) {
+        sumWHITEn++;
+        if(*ystart==-1) { *ystart=y2*2; *xstart=x2*2; }
+        *yfinal=y2*2; *xfinal=x2*2;
+      }
     }
   }
   return sumWHITEn;
 }
 
-#define ALGORITHM0 0
-void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x,int y,
-                  int *px, int *py) {
+//Find green most
+int BlockLeafCount(int xa,int ya,uint8_t *Y,uint8_t *U,uint8_t *V,
+                   int nY,int nU,int nV) {
+  int sumLeafn=0;
+  int x,y,x2,y2;
+  int Y1,U1,V1,R1,G1,B1;
+  for (y=ya-80;y<ya+80;y+=2) {
+    y2=y/2;
+    for (x=xa-80;x<xa+80;x+=2) {
+      x2=x/2;
+      Y1  = (Y[2*y2     * nY + 2*x2   ]+
+             Y[2*y2     * nY + 2*x2+1 ]+
+             Y[(2*y2+1) * nY + 2*x2   ]+
+             Y[(2*y2+1) * nY + 2*x2+1 ])/4;
+      U1 = U[y2 * nU + x2];
+      V1 = V[y2 * nV + x2];
+      R1 = YUV2R(Y1, U1, V1);
+      G1 = YUV2G(Y1, U1, V1);
+      B1 = YUV2B(Y1, U1, V1);
+      R1 = R1; 
+      if(G1>GMARGINL && B1<BMARGINH) sumLeafn++;
+    }
+  }
+  return sumLeafn;
+}
+int BresenhamLeafCount(int xa,int ya,int xb,int yb,uint8_t *Y,uint8_t *U,uint8_t *V,int nY,int nU,int nV,
+                       int *xpos,int *ypos) {
+//We set xa,ya,xb,yv even
+  int x0,y0,x1,y1;
+  x0=(xa/2)*2;y0=(ya/2)*2;x1=(xb/2)*2;y1=(yb/2)*2;
+  bool steep = abs(y1 - y0) > abs(x1 - x0);
+  int sumLEAFn,sumLEAFmax;
+  if (steep) {
+    swap(&x0, &y0);
+    swap(&x1, &y1);
+  }
+  if (x0 > x1) {
+    swap(&x0, &x1);
+    swap(&y0, &y1);
+  }
+  int deltax = x1 - x0;
+  int deltay = abs(y1 - y0);
+  int error = deltax / 2;
+  int ystep;
+  int y = y0;
+  if (y0 < y1) {ystep = 1;} else {ystep = -1;}
+  sumLEAFmax=0;
+  *xpos=-1;
+  *ypos=-1; 
+  if(x0<x1) {
+    for (int x=x0;x<x1;x++) {
+      if (steep) { 
+      //plot(y,x);
+      //printf("%4d,(%4d,%4d)\n",__LINE__,y,x);
+        sumLEAFn=BlockLeafCount(y,x,Y,U,V,nY,nU,nV);
+        if(sumLEAFn>sumLEAFmax) {
+          sumLEAFmax=sumLEAFn;
+          *xpos=y;
+          *ypos=x;
+//        printf("%4d(%4d,%4d),%4d\n",__LINE__,y,x,sumLEAFmax);
+        }
+      } 
+      else { 
+      //plot(x,y); 
+     // printf("%4d,(%4d,%4d)\n",__LINE__,x,y);
+        sumLEAFn=BlockLeafCount(x,y,Y,U,V,nY,nU,nV);
+        if(sumLEAFn>sumLEAFmax) {
+          sumLEAFmax=sumLEAFn;
+          *xpos=x;
+          *ypos=y;
+         //printf("%4d(%4d,%4d),%4d\n",__LINE__,x,y,sumLEAFmax);
+        }
+      }
+      error = error - deltay;
+      if (error < 0) {
+        y = y + ystep;
+        error = error + deltax;
+      }
+    }
+//  printf("%4d,(%4d,%4d),%5d\n",__LINE__,xa,ya,sumLEAFn);
+  }
+  else {
+    for(int y=y0;y<y1;y++) {
+      if (steep) { 
+        sumLEAFn=BlockLeafCount(y,x0,Y,U,V,nY,nU,nV);
+        if(sumLEAFn>sumLEAFmax) {
+          sumLEAFmax=sumLEAFn;
+          *xpos=y;
+          *ypos=x0;
+         //printf("%4d(%4d,%4d),%4d\n",__LINE__,x,y,sumLEAFmax);
+        }
+      }
+      else {
+        sumLEAFn=BlockLeafCount(x0,y,Y,U,V,nY,nU,nV);
+        if(sumLEAFn>sumLEAFmax) {
+          sumLEAFmax=sumLEAFn;
+          *xpos=x0;
+          *ypos=y;
+         //printf("%4d(%4d,%4d),%4d\n",__LINE__,x,y,sumLEAFmax);
+        }
+      }
+    }
+  }
+  return sumLEAFmax;
+}
+#define bY(x,y) aframe->data[0][(y) *   aframe->linesize[0] + (x)]
+#define bU(x,y) aframe->data[1][(y) *   aframe->linesize[1] + (x)]
+#define bV(x,y) aframe->data[2][(y) *   aframe->linesize[2] + (x)]
+#include "stt.h"
+void testToolBox3(const char *fname,const char *fDirectory,int frame_index,int x,int y,
+                  int *px, int *py, int *xLEAF, int *yLEAF) {
   int x0=x,x2;
   int y0=y,y2;
 #if ALGORITHM0
   int Y0,U0,V0,Y1,U1,V1;
   int R0,G0,B0,R1,G1,B1;
 #else
-  int Y0 = 0;
+  int Y0 = 0,Y1,U1,V1,R1,G1,B1;
   Y0 = Y0;
 #endif
   char tfname[256];
@@ -1687,42 +2043,16 @@ void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x
   printf("%s(%4d)%s(%4d,%4d)\n",__FILE__,__LINE__,fname,x,y);
   x2 = x0/2;
   y2 = y0/2;
-  x0 = x0; y0 = y0; x2 = x2; y2 = y2; 
-#if 0
-
-#if ALGORITHM0
-  Y0 = aframe->data[0][y0 * aframe->linesize[0] + x0];
-  U0 = aframe->data[1][y2 * aframe->linesize[1] + x2];
-  V0 = aframe->data[2][y2 * aframe->linesize[2] + x2];
-  R0 = YUV2R(Y0, U0, V0);
-  G0 = YUV2G(Y0, U0, V0);
-  B0 = YUV2B(Y0, U0, V0);
-#else
-  Y0=frame->data[0][y0 * frame->linesize[0] + x0];
-#endif
-  for (y = 0; y < codec_ctx->height; y++) {
-    y2 = y/2;
-    for (x = 0; x < codec_ctx->width; x++) {
-      x2 = x/2;
-#if ALGORITHM0
-      Y1 = aframe->data[0][y * aframe->linesize[0] + x];
-      U1 = aframe->data[1][y2 * aframe->linesize[1] + x2];
-      V1 = aframe->data[2][y2 * aframe->linesize[2] + x2];
-      R1 = YUV2R(Y1, U1, V1);
-      G1 = YUV2G(Y1, U1, V1);
-      B1 = YUV2B(Y1, U1, V1);
-      if( abs(R1-R0)+abs(G1-G0)+abs(B1-B0) > 100 )  {
-#else
-      if( abs(aframe->data[0][y * aframe->linesize[0] + x]-Y0) > 20 ) {
-#endif
-        aframe->data[0][y * aframe->linesize[0] + x]   = BLACKY;
-        aframe->data[1][y2 * aframe->linesize[1] + x2] = BLACKU;
-        aframe->data[2][y2 * aframe->linesize[2] + x2] = BLACKV; 
-      }  
-    }
-  }
-#endif
-
+  x0 = x0; y0 = y0; x2 = x2; y2 = y2;
+  Y1  = (bY(2*x2,  2*y2)+bY(2*x2,  2*y2+1)  +
+         bY(2*x2+1,2*y2)+bY(2*x2+1,2*y2+1)  )/4;
+  U1 = bU(x2 , y2);
+  V1 = bV(x2 , y2);
+  R1 = YUV2R(Y1, U1, V1);
+  G1 = YUV2G(Y1, U1, V1);
+  B1 = YUV2B(Y1, U1, V1);
+  stt.x0=x0;stt.y0=y0;stt.Y0=Y1;stt.U0=U1;stt.V0=V1;stt.R0=R1;stt.G0=G1;stt.B0=B1;
+//step 1:find a plane axis
   int sumWHITEn,sum1WHITEnmax;
   int y1WHITEi,y1WHITEj;
   int yi,yj;
@@ -1748,18 +2078,21 @@ void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x
       }
     }
   }
-
+  stt.y1i=y1WHITEi;stt.y1j=y1WHITEj;stt.x1s=x1s;stt.y1s=y1s;stt.x1f=x1f;stt.y1f=y1f;
+  printf("%4d,(   0,%4d)-(2159,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,y1WHITEi,y1WHITEj,
+         x1s,y1s,x1f,y1f,sum1WHITEnmax);
+//step 2:find a foot axis
   int sum2WHITEnmax;
   int x2WHITEi,x2WHITEj;
   int xi,xj;
-  int ybegin,x2start,y2start,x2final,y2final;
+  int y2begin,x2start,y2start,x2final,y2final;
   int x2s,y2s,x2f,y2f;
-  ybegin=(y1WHITEi+y1WHITEj) >> 1;
+  y2begin=(y1WHITEi+y1WHITEj) >> 1;
   sum2WHITEnmax=0;
   for (xi = 0; xi < codec_ctx->width; xi+=stepw) {
     for (xj = 0; xj < codec_ctx->width; xj+=stepw) {
       sumWHITEn=
-        BresenhamLineCountX(xi,ybegin,xj,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+        BresenhamLineCountXm(xi,y2begin,xj,3839,aframe->data[0],aframe->data[1],aframe->data[2],
                            aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
                            &x2start,&y2start,&x2final,&y2final);
       if(sum2WHITEnmax<sumWHITEn) {
@@ -1775,10 +2108,10 @@ void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x
       }
     }
   }
-  printf("%4d,(   0,%4d)-(2159,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,y1WHITEi,y1WHITEj,
-         x1s,y1s,x1f,y1f,sum1WHITEnmax);
-  printf("%4d,(%4d,%4d)-(%4d,3839),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x2WHITEi,ybegin,x2WHITEj,
+  stt.x2i=x2WHITEi;stt.y2i=y2begin;stt.x2j=x2WHITEj;stt.x2s=x2s;stt.y2s=y2s;stt.x2f=x2f;stt.y2f=y2f;
+  printf("%4d,(%4d,%4d)-(%4d,3839),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x2WHITEi,y2begin,x2WHITEj,
          x2s,y2s,x2f,y2f,sum2WHITEnmax);
+//printf("(%4d,%4d)-%4d,(%4d,%4d)-(%4d,%4d)\n",stt.x2i,stt.y2i,stt.x2j,stt.x2s,stt.y2s,stt.x2f,stt.y2f);
 //toolbox2.cpp(1686)../VID20260902080414/x0031.jpg( 793,3480)
 //1777,(   0,2192)-(2159,2096),( 604,2165)-(1657,2118),   1025
 //1779,(1610,2144)-(2146,3839),(1610,2144)-(1658,2295),    152
@@ -1786,6 +2119,11 @@ void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x
 //                                                \\               |                               
 //                                                 \\              |
 //                                          (xWHITEj,yfinal)
+//step 3:find third plane axis from previous plane axis and foot axis
+  int sum3WHITEnmax=0;
+  int x3WHITEi=0;
+  int x3begin,y3stop,x3start,y3start,x3final,y3final;
+  int x3s=0,y3s=0,x3f=0,y3f=0;
   int D=(x1f-x1s)*(y2f-y2s)-(x2f-x2s)*(y1f-y1s);
   *px=-1; *py=-1;
   if(x1s!=-1 && x1f!=-1 && x2s!=-1 && x2f!=-1 && y1s!=-1 && y1f!=-1 && y1s!=-1 && y1f!=-1 && D!=0) {
@@ -1795,52 +2133,168 @@ void testToolBox2(const char *fname,const char *fDirectory,int frame_index,int x
     int Dy=N2*(y1f-y1s)-N1*(y2f-y2s);
     double xd=(double)Dx/D;
     double yd=(double)Dy/D;
-    *px=static_cast<int>(xd);
-    *py=static_cast<int>(yd);
+    *px=static_cast<int>(xd);if(*px<0) *px=60;if(*px>2100) *px=2100;
+    *py=static_cast<int>(yd);if(*py<0) *py=60;if(*py>3800) *py=3800;
     printf("%4d(%4d,%4d)(%10.4f,%10.4f)\n",__LINE__,*px,*py,xd,yd);
   
-
-    int sum3WHITEnmax;
-    int x3WHITEj;
-    int xbegin,ystop,x3start,y3start,x3final,y3final;
-    int x3s,y3s,x3f,y3f;
-    xbegin=*px;ystop=*py;
-    sum3WHITEnmax=0;
-    for (xj = xbegin; xj < codec_ctx->width; xj+=stepw) {
+    x3begin=*px;y3stop=*py;
+    for (xi = x3begin; xi < codec_ctx->width; xi+=stepw) {
       sumWHITEn=
-        BresenhamLineCountX(xj,0,xbegin,ystop,aframe->data[0],aframe->data[1],aframe->data[2],
+        BresenhamLineCountX(xi,0,x3begin,y3stop,aframe->data[0],aframe->data[1],aframe->data[2],
                            aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
                            &x3start,&y3start,&x3final,&y3final);
       if(sum3WHITEnmax<sumWHITEn) {
         sum3WHITEnmax=sumWHITEn;
-        x3WHITEj=xj;
+        x3WHITEi=xi;
         x3s=x3start;
         y3s=y3start;
         x3f=x3final;
         y3f=y3final;
-        printf("%4d,(%4d,   0)-(%4d,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x3WHITEj,xbegin,ystop,
-               x3s,y3s,x3f,y3f,sum3WHITEnmax);
+      //printf("%4d,(%4d,   0)-(%4d,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x3WHITEj,xbegin,ystop,
+      //       x3s,y3s,x3f,y3f,sum3WHITEnmax);
       }
     }
-    printf("%4d,(%4d,   0)-(%4d,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x3WHITEj,xbegin,ystop,
+    printf("%4d,(%4d,   0)-(%4d,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x3WHITEi,x3begin,y3stop,
            x3s,y3s,x3f,y3f,sum3WHITEnmax);
-
-    BresenhamLine(x3WHITEj,0,xbegin,ystop,aframe->data[0],aframe->data[1],aframe->data[2],
-                  aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
-
   }
+  stt.x3i=x3WHITEi;stt.x3p=x3begin;stt.y3p=y3stop;stt.x3s=x3s;stt.y3s=y3s;stt.x3f=x3f;stt.y3f=y3f;
+//step 4:find another one foot axis
+  int sum4WHITEnmax;
+  int x4WHITEi;
+  int x4start,y4start,x4final,y4final;
+  int x4s,y4s,x4f,y4f;
+  int x4begin,y4begin;
+  x4begin=x1s;y4begin=y1s;
+  sum4WHITEnmax=0;
+  for (xi = x4begin; xi < x4begin+200; xi+=stepw) {
+    sumWHITEn=
+      BresenhamLineCountX(xi,y4begin,xi,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+                           aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
+                           &x4start,&y4start,&x4final,&y4final);
+    if(sum4WHITEnmax<sumWHITEn) {
+      sum4WHITEnmax=sumWHITEn;
+      x4WHITEi=xi;
+      x4s=x4start;
+      y4s=y4start;
+      x4f=x4final;
+      y4f=y4final;
+    }
+  }
+  stt.x4i=x4WHITEi;stt.y4i=y4begin;stt.x4s=x4s;stt.y4s=y4s;stt.x4f=x4f;stt.y4f=y4f;
+  printf("%4d,(%4d,%4d)-(%4d,3839),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x4WHITEi,y4begin,x4WHITEi,
+         x4s,y4s,x4f,y4f,sum4WHITEnmax);
+//step 5:find another second foot axis
+  int sum5WHITEnmax;
+  int x5WHITEi;
+  int x5start,y5start,x5final,y5final;
+  int x5s,y5s,x5f,y5f;
+  int x5stop,y5begin;
+  x5stop=x2f;y5begin=y2f-50;
+  if(y5begin<0) y5begin=0;
+  if(x5stop<50) x5stop=50;
+  sum5WHITEnmax=0;
+  for (xi = x5stop-50; xi < x5stop; xi+=stepw) {
+    sumWHITEn=
+      BresenhamLineCountXm(xi,y5begin,xi,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+                           aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
+                           &x5start,&y5start,&x5final,&y5final);
+    if(sum5WHITEnmax<sumWHITEn) {
+      sum5WHITEnmax=sumWHITEn;
+      x5WHITEi=xi;
+      x5s=x5start;
+      y5s=y5start;
+      x5f=x5final;
+      y5f=y5final;
+    }
+  }
+  stt.x5i=x5WHITEi;stt.y5i=y5begin;stt.x5s=x5s;stt.y5s=y5s;stt.x5f=x5f;stt.y5f=y5f;
+  printf("%4d,(%4d,%4d)-(%4d,3839),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x5WHITEi,y5begin,x5WHITEi,
+         x5s,y5s,x5f,y5f,sum5WHITEnmax);
+/*
+toolbox2.cpp(2038)../VID20260902080331/x0048.jpg(   0,   0)
+2068,(   0,1280)-(2159,1856),( 890,1518)-(1416,1658),    493
+2097,(1428,1568)-( 710,3839),(1420,1592)-(1216,2238),    446
+2122(1400,1653)( 1400.4637, 1653.8649)
+2141,(1990,   0)-(1400,1653),(1420,1592)-(1400,1650),     56
+2166,(1070,1518)-(1070,3839),(1070,1520)-(1070,1602),     84
+2192,(1208,2188)-(1208,3839),(1208,2188)-(1208,2222),     36
+2234,( 550,1700),  351
+( 649)(2160,3840)(1080,1920)
+[t3](1400,1653)( 550,1700)!
+*/
+//step 6:find a leaf
+  int sum6LEAFn,sum6LEAFmax;
+  int x6LEAF,y6LEAF;
+  x6LEAF=0; y6LEAF=0;
+  sum6LEAFmax=0;
+  if(x2s!=-1 && y2s!=-1 && x2f!=-1 && y2f!=-1 && *px!=-1 && *py!=-1) {
+//0,y1WHITEi,2160-1,y1WHITEj,*px=-1; *py=-1;x1s,y1s,x1f,y1f
+    int x6begin=x1s-mp4width/6;
+    if(x6begin<180) x6begin=180;
+    int x6stop=(x1f/2)*2;;
+    if(x6stop<mp4width-180) x6stop=mp4width-180;
+    
+    int y6begin=(y1s/2)*2;
+    if(y6begin<180) y6begin=180;
+    int y6stop=y6begin+mp4height/4;
+    if(y6stop>mp4height-180)  y6stop=mp4height-180;
+    int xl,yl;
+    printf("%4d,(%4d,%4d)-(%4d,%4d)\n",__LINE__,x6begin,y6begin,x6stop,y6stop);
+    for(y=y6begin;y<y6stop;y+=2) {
+      sum6LEAFn=BresenhamLeafCount(x6begin,y,x6stop,y,
+                         aframe->data[0],aframe->data[1],aframe->data[2],
+                         aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
+                         &xl,&yl);
+      if(sum6LEAFn>sum6LEAFmax) {
+        sum6LEAFmax=sum6LEAFn;
+        x6LEAF=xl;
+        y6LEAF=yl;
+      //printf("%4d(%4d,%4d)(%4d,%4d)%5d\n",__LINE__,x6LEAF,y6LEAF,x1f,y,sum6LEAFmax);
+      }
+    }  
+  }
+  printf("%4d,(%4d,%4d),%5d\n",__LINE__,x6LEAF,y6LEAF,sum6LEAFmax); 
+  *xLEAF=x6LEAF; *yLEAF=y6LEAF;
+  x2 = x6LEAF/2;
+  y2 = y6LEAF/2;
+  Y1  = (bY(2*x2,  2*y2)+bY(2*x2,  2*y2+1)  +
+         bY(2*x2+1,2*y2)+bY(2*x2+1,2*y2+1)  )/4;
+  U1 = bU(x2 , y2);
+  V1 = bV(x2 , y2);
+  R1 = YUV2R(Y1, U1, V1);
+  G1 = YUV2G(Y1, U1, V1);
+  B1 = YUV2B(Y1, U1, V1);
+  stt.x6=x6LEAF;stt.y6=y6LEAF;
+  stt.Y6=Y1;stt.U6=U1;stt.V6=V1;stt.R6=R1;stt.G6=G1;stt.B6=B1;
+//step 7:recognize a leaf,contour and region
 
   BresenhamLine(0,y1WHITEi,2160-1,y1WHITEj,aframe->data[0],aframe->data[1],aframe->data[2],
                 aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
 
 
-  BresenhamLine(x2WHITEi,ybegin,x2WHITEj,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+  BresenhamLine(x2WHITEi,y2begin,x2WHITEj,3839,aframe->data[0],aframe->data[1],aframe->data[2],
                 aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
+
+  if(sum3WHITEnmax>0) {
+    BresenhamLine(x3WHITEi,0,x3begin,y3stop,aframe->data[0],aframe->data[1],aframe->data[2],
+                  aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
+  }
+
+  if(sum4WHITEnmax>0) {
+    BresenhamLine(x4WHITEi,y4begin,x4WHITEi,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+                  aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
+  }
+
+  if(sum5WHITEnmax>0) {
+    BresenhamLine(x5WHITEi,y5begin,x5WHITEi,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+                  aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
+  }
 
 //sprintf(tfname,%s/tmp.jpg",fDirectory);
   sprintf(tfname,"img/x%04dt.jpg",frame_index);
   savePicture(aframe, tfname);
   aframe=aframe;
+  stt.isUpdate=true;
 }
 void getYUV(const char *fDirectory,int frame_index,int x,int y,int *Y,int *U,int *V) {
   char fname[256];
@@ -2437,3 +2891,285 @@ void act2(const char *fDirectory,int fi[],int x,int y)
 //step 2: find 3 views shifting x,y
   findMINsum(x,y,aframe0,aframe1,aframe2);
 }
+void tprocess0(const char *fname,const char *fDirectory,int frame_index,int x,int y,
+               int *px, int *py, int *xLEAF, int *yLEAF) {
+  int x0=x,x2;
+  int y0=y,y2;
+  int Y1,U1,V1,R1,G1,B1;
+  freeAll();
+  AVFrame *aframe=getFrame(fname);
+  printf("%s(%4d)%s(%4d,%4d)\n",__FILE__,__LINE__,fname,x,y);
+  x2 = x0/2;
+  y2 = y0/2;
+  x0 = x0; y0 = y0; x2 = x2; y2 = y2;
+  Y1  = (bY(2*x2,  2*y2)+bY(2*x2,  2*y2+1)  +
+         bY(2*x2+1,2*y2)+bY(2*x2+1,2*y2+1)  )/4;
+  U1 = bU(x2 , y2);
+  V1 = bV(x2 , y2);
+  R1 = YUV2R(Y1, U1, V1);
+  G1 = YUV2G(Y1, U1, V1);
+  B1 = YUV2B(Y1, U1, V1);
+  stt.x0=x0;stt.y0=y0;stt.Y0=Y1;stt.U0=U1;stt.V0=V1;stt.R0=R1;stt.G0=G1;stt.B0=B1;
+}
+void tprocess1(const char *fname,const char *fDirectory,int frame_index,int x,int y,
+               int *px, int *py, int *xLEAF, int *yLEAF) {
+  freeAll();
+  AVFrame *aframe=getFrame(fname);
+//step 1:find a plane axis
+  int sumWHITEn,sum1WHITEnmax;
+  int y1WHITEi,y1WHITEj;
+  int yi,yj;
+  int x1start,y1start,x1final,y1final;
+  int x1s,y1s,x1f,y1f;
+  sum1WHITEnmax=0;
+  for (yi = 0; yi < codec_ctx->height; yi+=stepy) {
+    for (yj = 0; yj < codec_ctx->height; yj+=stepy) {
+      sumWHITEn=
+        BresenhamLineCountY(0,yi,2159,yj,aframe->data[0],aframe->data[1],aframe->data[2],
+                           aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
+                           &x1start,&y1start,&x1final,&y1final);
+      if(sum1WHITEnmax<sumWHITEn) {
+        sum1WHITEnmax=sumWHITEn;
+        y1WHITEi=yi;
+        y1WHITEj=yj;
+        x1s=x1start;
+        y1s=y1start;
+        x1f=x1final;
+        y1f=y1final;
+//      printf("%4d,(   0,%4d)-(2159,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,y1WHITEi,y1WHITEj,
+//             x1s,y1s,y1f,x1f,sum1WHITEnmax);
+      }
+    }
+  }
+  stt.y1i=y1WHITEi;stt.y1j=y1WHITEj;stt.x1s=x1s;stt.y1s=y1s;stt.x1f=x1f;stt.y1f=y1f;
+  stt.isUpdate=true;
+  printf("%4d,(   0,%4d)-(2159,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,y1WHITEi,y1WHITEj,
+         x1s,y1s,x1f,y1f,sum1WHITEnmax);
+}
+void tprocess2(const char *fname,const char *fDirectory,int frame_index,int x,int y,
+                  int *px, int *py, int *xLEAF, int *yLEAF) {
+  freeAll();
+  AVFrame *aframe=getFrame(fname);
+//step 2:find a foot axis
+  int sumWHITEn,sum2WHITEnmax;
+  int x2WHITEi,x2WHITEj;
+  int xi,xj;
+  int y2begin,x2start,y2start,x2final,y2final;
+  int x2s,y2s,x2f,y2f;
+  if(stt.y1j==0) return;
+  y2begin=(stt.y1i+stt.y1j) >> 1;
+  sum2WHITEnmax=0;
+  for (xi = 0; xi < codec_ctx->width; xi+=stepw) {
+    for (xj = 0; xj < codec_ctx->width; xj+=stepw) {
+      sumWHITEn=
+        BresenhamLineCountXm(xi,y2begin,xj,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+                           aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
+                           &x2start,&y2start,&x2final,&y2final);
+      if(sum2WHITEnmax<sumWHITEn) {
+        sum2WHITEnmax=sumWHITEn;
+        x2WHITEi=xi;
+        x2WHITEj=xj;
+        x2s=x2start;
+        y2s=y2start;
+        x2f=x2final;
+        y2f=y2final;
+//      printf("%4d,(%4d,%4d)-(%4d,3839),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x2WHITEi,ybegin,x2WHITEj,
+//             x2s,y2s,x2f,y2f,sum2WHITEnmax);
+      }
+    }
+  }
+  stt.x2i=x2WHITEi;stt.y2i=y2begin;stt.x2j=x2WHITEj;stt.x2s=x2s;stt.y2s=y2s;stt.x2f=x2f;stt.y2f=y2f;
+  printf("%4d,(%4d,%4d)-(%4d,3839),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x2WHITEi,y2begin,x2WHITEj,
+         x2s,y2s,x2f,y2f,sum2WHITEnmax);
+}
+void tprocess3(const char *fname,const char *fDirectory,int frame_index,int x,int y,
+               int *px, int *py, int *xLEAF, int *yLEAF) {
+  if(stt.y1f==0) return;
+  freeAll();
+  AVFrame *aframe=getFrame(fname);
+//step 3:find third plane axis from previous plane axis and foot axis
+  int sumWHITEn,sum3WHITEnmax=0;
+  int x3WHITEi;
+  int x3begin,y3stop,x3start,y3start,x3final,y3final;
+  int x3s,y3s,x3f,y3f;
+  int x1s,y1s,x1f,y1f;
+  int x2s,y2s,x2f,y2f;
+  int xi;
+  x1s=stt.x1s;y1s=stt.y1s;x1f=stt.x1f;y1f=stt.y1f;
+  x2s=stt.x2s;y2s=stt.y2s;x2f=stt.x2f;y2f=stt.y2f;
+  int D=(x1f-x1s)*(y2f-y2s)-(x2f-x2s)*(y1f-y1s);
+  *px=-1; *py=-1;
+  if(x1s!=-1 && x1f!=-1 && x2s!=-1 && x2f!=-1 && y1s!=-1 && y1f!=-1 && y1s!=-1 && y1f!=-1 && D!=0) {
+    int N1=x1s*y1f-x1f*y1s;
+    int N2=x2s*y2f-x2f*y2s;
+    int Dx=N2*(x1f-x1s)-N1*(x2f-x2s);
+    int Dy=N2*(y1f-y1s)-N1*(y2f-y2s);
+    double xd=(double)Dx/D;
+    double yd=(double)Dy/D;
+    *px=static_cast<int>(xd);
+    *py=static_cast<int>(yd);
+    printf("%4d(%4d,%4d)(%10.4f,%10.4f)\n",__LINE__,*px,*py,xd,yd);
+  
+    x3begin=*px;y3stop=*py;
+    for (xi = x3begin; xi < codec_ctx->width; xi+=stepw) {
+      sumWHITEn=
+        BresenhamLineCountX(xi,0,x3begin,y3stop,aframe->data[0],aframe->data[1],aframe->data[2],
+                           aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
+                           &x3start,&y3start,&x3final,&y3final);
+      if(sum3WHITEnmax<sumWHITEn) {
+        sum3WHITEnmax=sumWHITEn;
+        x3WHITEi=xi;
+        x3s=x3start;
+        y3s=y3start;
+        x3f=x3final;
+        y3f=y3final;
+      //printf("%4d,(%4d,   0)-(%4d,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x3WHITEj,xbegin,ystop,
+      //       x3s,y3s,x3f,y3f,sum3WHITEnmax);
+      }
+    }
+    printf("%4d,(%4d,   0)-(%4d,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x3WHITEi,x3begin,y3stop,
+           x3s,y3s,x3f,y3f,sum3WHITEnmax);
+  }
+  stt.x3i=x3WHITEi;stt.x3p=x3begin;stt.y3p=y3stop;stt.x3s=x3s;stt.y3s=y3s;stt.x3f=x3f;stt.y3f=y3f;
+}
+void tprocess45(const char *fname,const char *fDirectory,int frame_index,int x,int y,
+                int *px, int *py, int *xLEAF, int *yLEAF) {
+  freeAll();
+  AVFrame *aframe=getFrame(fname);
+//step 4:find another one foot axis
+  int sumWHITEn,sum4WHITEnmax;
+  int x4WHITEi;
+  int x4start,y4start,x4final,y4final;
+  int x4s,y4s,x4f,y4f;
+  int x4begin,y4begin;
+  int xi;
+  x4begin=stt.x1s;y4begin=stt.y1s;
+  sum4WHITEnmax=0;
+  for (xi = x4begin; xi < x4begin+200; xi+=stepw) {
+    sumWHITEn=
+      BresenhamLineCountX(xi,y4begin,xi,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+                           aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
+                           &x4start,&y4start,&x4final,&y4final);
+    if(sum4WHITEnmax<sumWHITEn) {
+      sum4WHITEnmax=sumWHITEn;
+      x4WHITEi=xi;
+      x4s=x4start;
+      y4s=y4start;
+      x4f=x4final;
+      y4f=y4final;
+    }
+  }
+  stt.x4i=x4WHITEi;stt.y4i=y4begin;stt.x4s=x4s;stt.y4s=y4s;stt.x4f=x4f;stt.y4f=y4f;
+  printf("%4d,(%4d,%4d)-(%4d,3839),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x4WHITEi,y4begin,x4WHITEi,
+         x4s,y4s,x4f,y4f,sum4WHITEnmax);
+//step 5:find another second foot axis
+  int sum5WHITEnmax;
+  int x5WHITEi;
+  int x5start,y5start,x5final,y5final;
+  int x5s,y5s,x5f,y5f;
+  int x5stop,y5begin;
+  x5stop=stt.x2f;y5begin=stt.y2f-50;
+  if(y5begin<0) y5begin=0;
+  if(x5stop<50) x5stop=50;
+  sum5WHITEnmax=0;
+  for (xi = x5stop-50; xi < x5stop; xi+=stepw) {
+    sumWHITEn=
+      BresenhamLineCountXm(xi,y5begin,xi,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+                           aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
+                           &x5start,&y5start,&x5final,&y5final);
+    if(sum5WHITEnmax<sumWHITEn) {
+      sum5WHITEnmax=sumWHITEn;
+      x5WHITEi=xi;
+      x5s=x5start;
+      y5s=y5start;
+      x5f=x5final;
+      y5f=y5final;
+    }
+  }
+  stt.x5i=x5WHITEi;stt.y5i=y5begin;stt.x5s=x5s;stt.y5s=y5s;stt.x5f=x5f;stt.y5f=y5f;
+  printf("%4d,(%4d,%4d)-(%4d,3839),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x5WHITEi,y5begin,x5WHITEi,
+         x5s,y5s,x5f,y5f,sum5WHITEnmax);
+}
+void tprocess6(const char *fname,const char *fDirectory,int frame_index,int x,int y,
+               int *px, int *py, int *xLEAF, int *yLEAF) {
+  if(stt.x1f==0||stt.y2f==0) return;
+  char tfname[256];
+  freeAll();
+  AVFrame *aframe=getFrame(fname);
+//step 6:find a leaf
+  int sum6LEAFn,sum6LEAFmax;
+  int x6LEAF,y6LEAF;
+  
+  int x2s,y2s,x2f,y2f;
+  int x1s,x1f,y1s;
+  x2s=stt.x2s;y2s=stt.y2s;x2f=stt.x2f;y2f=stt.y2f;
+  x1s=stt.x1s;y1s=stt.y1s;x1f=stt.x1f;
+  int x2,y2;
+  int Y1,U1,V1,R1,G1,B1;
+  sum6LEAFmax=0;
+  if(x2s!=-1 && y2s!=-1 && x2f!=-1 && y2f!=-1 && *px!=-1 && *py!=-1) {
+//0,y1WHITEi,2160-1,y1WHITEj,*px=-1; *py=-1;x1s,y1s,x1f,y1f
+    int x6begin=x1s-mp4width/6;
+    if(x6begin<180) x6begin=180;
+    int x6stop=x1f/2*2;;
+    if(x6stop<mp4width-180) x6stop=mp4width-180;
+    int y6begin=y1s;
+    if(y6begin<180) y6begin=180;
+    int y6stop=y6begin+mp4height/4;
+    if(y6stop>mp4height-180)  y6stop=mp4height-180;
+    int xl,yl;
+    for(y=y6begin;y<y6stop;y+=2) {
+      sum6LEAFn=BresenhamLeafCount(x6begin,y,x6stop,y,
+                         aframe->data[0],aframe->data[1],aframe->data[2],
+                         aframe->linesize[0],aframe->linesize[1],aframe->linesize[2],
+                         &xl,&yl);
+      if(sum6LEAFn>sum6LEAFmax) {
+        sum6LEAFmax=sum6LEAFn;
+        x6LEAF=xl;
+        y6LEAF=yl;
+      //printf("%4d(%4d,%4d)(%4d,%4d)%5d\n",__LINE__,x6LEAF,y6LEAF,x1f,y,sum6LEAFmax);
+      }
+    }  
+  }
+  *xLEAF=x6LEAF; *yLEAF=y6LEAF;
+  x2 = x6LEAF/2;
+  y2 = y6LEAF/2;
+  Y1  = (bY(2*x2,  2*y2)+bY(2*x2,  2*y2+1)  +
+         bY(2*x2+1,2*y2)+bY(2*x2+1,2*y2+1)  )/4;
+  U1 = bU(x2 , y2);
+  V1 = bV(x2 , y2);
+  R1 = YUV2R(Y1, U1, V1);
+  G1 = YUV2G(Y1, U1, V1);
+  B1 = YUV2B(Y1, U1, V1);
+  stt.x6=x6LEAF;stt.y6=y6LEAF;
+  stt.Y6=Y1;stt.U6=U1;stt.V6=V1;stt.R6=R1;stt.G6=G1;stt.B6=B1;
+  printf("%4d,(%4d,%4d),%5d\n",__LINE__,x6LEAF,y6LEAF,sum6LEAFmax);
+//step 7:recognize a leaf,contour and region
+  BresenhamLine(0,stt.y1i,2160-1,stt.y1j,aframe->data[0],aframe->data[1],aframe->data[2],
+                aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
+
+
+  BresenhamLine(stt.x2i,stt.y2i,stt.x2j,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+                aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
+
+  if(stt.x3p>0) {
+    BresenhamLine(stt.x3i,0,stt.x3p,stt.y3p,aframe->data[0],aframe->data[1],aframe->data[2],
+                  aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
+    *px=stt.x3p;*py=stt.y3p;
+  }
+x
+  if(stt.y4f>0) {
+    BresenhamLine(stt.x4i,stt.y4i,stt.x4i,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+                  aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
+  }
+  if(stt.y5f>0) {
+    BresenhamLine(stt.x5i,stt.y5i,stt.x5i,3839,aframe->data[0],aframe->data[1],aframe->data[2],
+                  aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
+  }
+//sprintf(tfname,%s/tmp.jpg",fDirectory);
+  sprintf(tfname,"img/x%04dt.jpg",frame_index);
+  savePicture(aframe, tfname);
+  aframe=aframe;
+}
+
+
