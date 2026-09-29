@@ -972,8 +972,7 @@ int sdl_main(int argc, char *argv[]);
 int dfvmux3diff_main(int argc, char **argv);
 int listbox_main(int argc, char* argv[]);
 int main(int argc, char **argv) {
-  int listbox_main(int argc, char* argv[]);
-  return dfvmux3diff_main(argc, argv);
+  return sdl_main(argc, argv);
 }
 #define XLENGTH 3840
 int UEY[XLENGTH];

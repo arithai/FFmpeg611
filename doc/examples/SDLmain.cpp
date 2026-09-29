@@ -7,8 +7,8 @@
 
 #include <stdio.h>
 void __assert_func(const char *file, int line, const char *func, const char *failedexpr) {
-    // You can customize this to print to stderr or a logging system
-    // Or just leave it empty if you want to silence the error
+//You can customize this to print to stderr or a logging system
+//Or just leave it empty if you want to silence the error
 };
 
 //#include <stdlib.h> 
@@ -1116,12 +1116,91 @@ Redraw:
               if(lx!=-1 && ly!=-1) {
                 predictClicks[0].x=lx; predictClicks[0].y=ly;
               }
-              sprintf(fname,"img/x%04dt.jpg",picSN_FreeMode);
-              surface = IMG_Load(fname);
-              texture = SDL_CreateTextureFromSurface(gRenderer, surface);
-              SDL_FreeSurface(surface);
-              scaleTexture = DuplicateAndScaleTexture(gRenderer, texture);
-              sprintf(Prompt,"%s(%04d)(%4d,%4d)",fDirectory+6,picSN_FreeMode,lx,ly);
+              sprintf(Prompt,"%s,%s(%04d)(%4d,%4d)",inputText.c_str(),fDirectory+6,picSN_FreeMode,lx,ly);
+              PromptText = Prompt;
+              printf("[%s](%4d,%4d)(%4d,%4d)!\n",inputText.c_str(),px,py,lx,ly);
+			  renderText = true;
+            }
+            else if(inputText=="tp1") {
+              int x0=getw(ptClick.x);
+              int y0=geth(ptClick.y);
+              if(ptClick.x<0) x0=0;
+              char fname[256];
+              int px,py,lx,ly;
+              if(ptClick.y<0) y0=0;
+              if(picSN_FreeMode==0) picSN_FreeMode=1;
+              sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
+              tprocess1(fname,fDirectory,picSN_FreeMode,x0,y0,&px,&py,&lx,&ly);
+              if(px!=-1 && py!=-1) {
+                predictClick.x=px;predictClick.y=py;
+              } 
+              if(lx!=-1 && ly!=-1) {
+                predictClicks[0].x=lx; predictClicks[0].y=ly;
+              }
+              sprintf(Prompt,"%s,%s(%04d)(%4d,%4d)",inputText.c_str(),fDirectory+6,picSN_FreeMode,lx,ly);
+              PromptText = Prompt;
+              printf("[%s](%4d,%4d)(%4d,%4d)!\n",inputText.c_str(),px,py,lx,ly);
+			  renderText = true;
+            }
+            else if(inputText=="tp2") {
+              int x0=getw(ptClick.x);
+              int y0=geth(ptClick.y);
+              if(ptClick.x<0) x0=0;
+              char fname[256];
+              int px,py,lx,ly;
+              if(ptClick.y<0) y0=0;
+              if(picSN_FreeMode==0) picSN_FreeMode=1;
+              sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
+              tprocess2(fname,fDirectory,picSN_FreeMode,x0,y0,&px,&py,&lx,&ly);
+              if(px!=-1 && py!=-1) {
+                predictClick.x=px;predictClick.y=py;
+              } 
+              if(lx!=-1 && ly!=-1) {
+                predictClicks[0].x=lx; predictClicks[0].y=ly;
+              }
+              sprintf(Prompt,"%s,%s(%04d)(%4d,%4d)",inputText.c_str(),fDirectory+6,picSN_FreeMode,lx,ly);
+              PromptText = Prompt;
+              printf("[%s](%4d,%4d)(%4d,%4d)!\n",inputText.c_str(),px,py,lx,ly);
+			  renderText = true;
+            }
+            else if(inputText=="tp3") {
+              int x0=getw(ptClick.x);
+              int y0=geth(ptClick.y);
+              if(ptClick.x<0) x0=0;
+              char fname[256];
+              int px,py,lx,ly;
+              if(ptClick.y<0) y0=0;
+              if(picSN_FreeMode==0) picSN_FreeMode=1;
+              sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
+              tprocess3(fname,fDirectory,picSN_FreeMode,x0,y0,&px,&py,&lx,&ly);
+              if(px!=-1 && py!=-1) {
+                predictClick.x=px;predictClick.y=py;
+              } 
+              if(lx!=-1 && ly!=-1) {
+                predictClicks[0].x=lx; predictClicks[0].y=ly;
+              }
+              sprintf(Prompt,"%s,%s(%04d)(%4d,%4d)",inputText.c_str(),fDirectory+6,picSN_FreeMode,lx,ly);
+              PromptText = Prompt;
+              printf("[%s](%4d,%4d)(%4d,%4d)!\n",inputText.c_str(),px,py,lx,ly);
+			  renderText = true;
+            }
+            else if(inputText=="tp45") {
+              int x0=getw(ptClick.x);
+              int y0=geth(ptClick.y);
+              if(ptClick.x<0) x0=0;
+              char fname[256];
+              int px,py,lx,ly;
+              if(ptClick.y<0) y0=0;
+              if(picSN_FreeMode==0) picSN_FreeMode=1;
+              sprintf(fname,"%s/x%04d.jpg",fDirectory,picSN_FreeMode);
+              tprocess45(fname,fDirectory,picSN_FreeMode,x0,y0,&px,&py,&lx,&ly);
+              if(px!=-1 && py!=-1) {
+                predictClick.x=px;predictClick.y=py;
+              } 
+              if(lx!=-1 && ly!=-1) {
+                predictClicks[0].x=lx; predictClicks[0].y=ly;
+              }
+              sprintf(Prompt,"%s,%s(%04d)(%4d,%4d)",inputText.c_str(),fDirectory+6,picSN_FreeMode,lx,ly);
               PromptText = Prompt;
               printf("[%s](%4d,%4d)(%4d,%4d)!\n",inputText.c_str(),px,py,lx,ly);
 			  renderText = true;
@@ -1147,7 +1226,7 @@ Redraw:
               texture = SDL_CreateTextureFromSurface(gRenderer, surface);
               SDL_FreeSurface(surface);
               scaleTexture = DuplicateAndScaleTexture(gRenderer, texture);
-              sprintf(Prompt,"%s(%04d)(%4d,%4d)",fDirectory+6,picSN_FreeMode,lx,ly);
+              sprintf(Prompt,"%s,%s(%04d)(%4d,%4d)",inputText.c_str(),fDirectory+6,picSN_FreeMode,lx,ly);
               PromptText = Prompt;
               printf("[%s](%4d,%4d)(%4d,%4d)!\n",inputText.c_str(),px,py,lx,ly);
 			  renderText = true;
@@ -1343,20 +1422,23 @@ Redraw:
       }
 // Capture committed text from keyboard or IME
       else if (e.type == SDL_TEXTINPUT) {
-         printf("%s(%3d) TEXTINPUT %s\n",__FILE__,__LINE__,e.text.text);
+        printf("%s(%3d) TEXTINPUT %s\n",__FILE__,__LINE__,e.text.text);
  	    //Not copy or pasting
-		if( !( SDL_GetModState() & KMOD_CTRL && ( e.text.text[ 0 ] == 'c' || e.text.text[ 0 ] == 'C' || e.text.text[ 0 ] == 'v' || e.text.text[ 0 ] == 'V' ) ) )
-		{
-		//Append character
-		  inputText += e.text.text;
-		  renderText = true;
-          printf("%3d+ %c\n",__LINE__,e.text.text[0]);
-		}
-        else {
-		  inputText += e.text.text;
-		  renderText = true;
-          printf("%3d+ %c\n",__LINE__,e.text.text[0]);
-	    }
+        //1432+ ,FFFFFFE5 '0'=48 'z'=122
+        if ((unsigned char)e.text.text[0]>=48 && (unsigned char)e.text.text[0]<=122) { 
+  		  if( !( SDL_GetModState() & KMOD_CTRL && ( e.text.text[ 0 ] == 'c' || e.text.text[ 0 ] == 'C' || e.text.text[ 0 ] == 'v' || e.text.text[ 0 ] == 'V' ) ) )
+		  {
+		  //Append character
+		    inputText += e.text.text;
+		    renderText = true;
+          //printf("%4d+ %c,%02X\n",__LINE__,e.text.text[0],e.text.text[0]);
+		  }
+          else {
+		    inputText += e.text.text;
+		    renderText = true;
+          //printf("%4d+ %c,%02X\n",__LINE__,e.text.text[0],e.text.text[0]);
+	      }
+        }
       }
       // Optional: Capture composition changes (IME pre-edit state)
       else if (e.type == SDL_TEXTEDITING) {
@@ -1822,13 +1904,14 @@ Redraw:
     finalTick = SDL_GetTicks();
 	if( renderText || (finalTick-startTick)>2000)
 	{
+      startTick = finalTick;
       std::string inputTexts= inputText+cursors[cursorn];
 	  //Render new text
 	  gInputTextTexture.loadFromRenderedText( inputTexts.c_str(), textColor );
       gPromptTextTexture.loadFromRenderedText( PromptText.c_str(), textColor );
       cursorn++;
       cursorn=cursorn&0x0001;
-      startTick = finalTick;
+      printf("%4d(%lld),string=%s\n",__LINE__,strlen(inputText.c_str()),inputTexts.c_str());
 	}
 	//Clear screen
 //	SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );

@@ -1,4 +1,32 @@
 
+
+20260930
+    ScriptAlias /cgi-bin/ "/srv/www/cgi-bin/"
+    ScriptAlias "/accounting-software-php/" "/cygdrive/c/u14/github/account/accounting-software-php/"
+    ScriptAlias /arith.online/ "/cygdrive/c/u14/github/arithai/"
+
+20260914
+
+There is a bug from tp2,3,4,5 ==> tp6 
+Width: 2160, Height: 3840, Pixel Format: 12
+3160,( 830,2096)(145, 47,126)(147,183,  0)
+3165,(1988,1552)-1062,(1960,1622)-(1684,2302)
+3169,(1116382069)-(1994,1994),(32758,1116361920)-(  56,1019211472)
+Segmentation fault
+
+
+20260912 close template
+/usr/sbin/apachectl restart
+$ make DEBUG=0 -fMakefile.act dfv2
+x86_64-w64-mingw32-g++ dfvmux3diff.cpp  -o dfvmux3diff -I/usr/local/include  -DNDEBUG -fpermissive -I/usr/include/SDL2/ -I../stb -Wall -g toolbox2.cpp act2.cpp SDLmain.cpp matrix.cpp -L/usr/local/lib/ -L/usr/x86_64-w64-mingw32/sys-root/mingw/lib/  -lavdevice -lavfilter -lavformat -lavcodec -lswresample -lswscale -lavutil -lSDL2_ttf -lSDL2_image -lm -lSDL2main -lSDL2 -mconsole
+cp ./dfvmux3diff.exe exe
+./dfvmux3diff.exe ./VID20260902080414.mp4 ./VID20260902080414_r2.mp4
+test2
+test3
+tp6
+will do step 7,bug fix
+toolbox2.cpp(2302) (1117,1987) ../VID20260902080331/x0048.jpg
+
 20260903
 ffmpeg -i VID20260902080414_r2.mp4 -vf "transpose=1" -metadata:s:v:0 rotate=0 -c:a copy output.mp4
 VID20260902080414_r2

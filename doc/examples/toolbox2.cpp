@@ -2910,6 +2910,8 @@ void tprocess0(const char *fname,const char *fDirectory,int frame_index,int x,in
   G1 = YUV2G(Y1, U1, V1);
   B1 = YUV2B(Y1, U1, V1);
   stt.x0=x0;stt.y0=y0;stt.Y0=Y1;stt.U0=U1;stt.V0=V1;stt.R0=R1;stt.G0=G1;stt.B0=B1;
+  *px=stt.x3p;*py=stt.y3p;*xLEAF=stt.x6;*yLEAF=stt.y6;
+  stt.isUpdate=true;
 }
 void tprocess1(const char *fname,const char *fDirectory,int frame_index,int x,int y,
                int *px, int *py, int *xLEAF, int *yLEAF) {
@@ -2942,6 +2944,7 @@ void tprocess1(const char *fname,const char *fDirectory,int frame_index,int x,in
     }
   }
   stt.y1i=y1WHITEi;stt.y1j=y1WHITEj;stt.x1s=x1s;stt.y1s=y1s;stt.x1f=x1f;stt.y1f=y1f;
+  *px=stt.x3p;*py=stt.y3p;*xLEAF=stt.x6;*yLEAF=stt.y6;
   stt.isUpdate=true;
   printf("%4d,(   0,%4d)-(2159,%4d),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,y1WHITEi,y1WHITEj,
          x1s,y1s,x1f,y1f,sum1WHITEnmax);
@@ -2979,6 +2982,8 @@ void tprocess2(const char *fname,const char *fDirectory,int frame_index,int x,in
     }
   }
   stt.x2i=x2WHITEi;stt.y2i=y2begin;stt.x2j=x2WHITEj;stt.x2s=x2s;stt.y2s=y2s;stt.x2f=x2f;stt.y2f=y2f;
+  *px=stt.x3p;*py=stt.y3p;*xLEAF=stt.x6;*yLEAF=stt.y6;
+  stt.isUpdate=true;
   printf("%4d,(%4d,%4d)-(%4d,3839),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x2WHITEi,y2begin,x2WHITEj,
          x2s,y2s,x2f,y2f,sum2WHITEnmax);
 }
@@ -2989,9 +2994,9 @@ void tprocess3(const char *fname,const char *fDirectory,int frame_index,int x,in
   AVFrame *aframe=getFrame(fname);
 //step 3:find third plane axis from previous plane axis and foot axis
   int sumWHITEn,sum3WHITEnmax=0;
-  int x3WHITEi;
+  int x3WHITEi=0;
   int x3begin,y3stop,x3start,y3start,x3final,y3final;
-  int x3s,y3s,x3f,y3f;
+  int x3s=0,y3s=0,x3f=0,y3f=0;
   int x1s,y1s,x1f,y1f;
   int x2s,y2s,x2f,y2f;
   int xi;
@@ -3031,6 +3036,8 @@ void tprocess3(const char *fname,const char *fDirectory,int frame_index,int x,in
            x3s,y3s,x3f,y3f,sum3WHITEnmax);
   }
   stt.x3i=x3WHITEi;stt.x3p=x3begin;stt.y3p=y3stop;stt.x3s=x3s;stt.y3s=y3s;stt.x3f=x3f;stt.y3f=y3f;
+  *px=stt.x3p;*py=stt.y3p;*xLEAF=stt.x6;*yLEAF=stt.y6;
+  stt.isUpdate=true;
 }
 void tprocess45(const char *fname,const char *fDirectory,int frame_index,int x,int y,
                 int *px, int *py, int *xLEAF, int *yLEAF) {
@@ -3038,9 +3045,9 @@ void tprocess45(const char *fname,const char *fDirectory,int frame_index,int x,i
   AVFrame *aframe=getFrame(fname);
 //step 4:find another one foot axis
   int sumWHITEn,sum4WHITEnmax;
-  int x4WHITEi;
+  int x4WHITEi=0;
   int x4start,y4start,x4final,y4final;
-  int x4s,y4s,x4f,y4f;
+  int x4s=0,y4s=0,x4f=0,y4f=0;
   int x4begin,y4begin;
   int xi;
   x4begin=stt.x1s;y4begin=stt.y1s;
@@ -3062,11 +3069,12 @@ void tprocess45(const char *fname,const char *fDirectory,int frame_index,int x,i
   stt.x4i=x4WHITEi;stt.y4i=y4begin;stt.x4s=x4s;stt.y4s=y4s;stt.x4f=x4f;stt.y4f=y4f;
   printf("%4d,(%4d,%4d)-(%4d,3839),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x4WHITEi,y4begin,x4WHITEi,
          x4s,y4s,x4f,y4f,sum4WHITEnmax);
+  printf("%4d,(%4d,%4d),(%4d,%4d)-(%4d,%4d)\n",__LINE__,stt.x4i,stt.y4i,stt.x4s,stt.y4s,stt.x4f,stt.y4f);
 //step 5:find another second foot axis
   int sum5WHITEnmax;
-  int x5WHITEi;
+  int x5WHITEi=0;
   int x5start,y5start,x5final,y5final;
-  int x5s,y5s,x5f,y5f;
+  int x5s=0,y5s=0,x5f=0,y5f=0;
   int x5stop,y5begin;
   x5stop=stt.x2f;y5begin=stt.y2f-50;
   if(y5begin<0) y5begin=0;
@@ -3087,6 +3095,8 @@ void tprocess45(const char *fname,const char *fDirectory,int frame_index,int x,i
     }
   }
   stt.x5i=x5WHITEi;stt.y5i=y5begin;stt.x5s=x5s;stt.y5s=y5s;stt.x5f=x5f;stt.y5f=y5f;
+  *px=stt.x3p;*py=stt.y3p;*xLEAF=stt.x6;*yLEAF=stt.y6;
+  stt.isUpdate=true;
   printf("%4d,(%4d,%4d)-(%4d,3839),(%4d,%4d)-(%4d,%4d),%7d\n",__LINE__,x5WHITEi,y5begin,x5WHITEi,
          x5s,y5s,x5f,y5f,sum5WHITEnmax);
 }
@@ -3098,7 +3108,7 @@ void tprocess6(const char *fname,const char *fDirectory,int frame_index,int x,in
   AVFrame *aframe=getFrame(fname);
 //step 6:find a leaf
   int sum6LEAFn,sum6LEAFmax;
-  int x6LEAF,y6LEAF;
+  int x6LEAF=0,y6LEAF=0;
   
   int x2s,y2s,x2f,y2f;
   int x1s,x1f,y1s;
@@ -3107,11 +3117,13 @@ void tprocess6(const char *fname,const char *fDirectory,int frame_index,int x,in
   int x2,y2;
   int Y1,U1,V1,R1,G1,B1;
   sum6LEAFmax=0;
+  x2s=stt.x2s;y2s=stt.y2s;x2f=stt.x2f;y2f=stt.y2f;
+  *px=stt.x3p;*py=stt.y3p;
   if(x2s!=-1 && y2s!=-1 && x2f!=-1 && y2f!=-1 && *px!=-1 && *py!=-1) {
 //0,y1WHITEi,2160-1,y1WHITEj,*px=-1; *py=-1;x1s,y1s,x1f,y1f
     int x6begin=x1s-mp4width/6;
     if(x6begin<180) x6begin=180;
-    int x6stop=x1f/2*2;;
+    int x6stop=x1f/2*2;
     if(x6stop<mp4width-180) x6stop=mp4width-180;
     int y6begin=y1s;
     if(y6begin<180) y6begin=180;
@@ -3127,7 +3139,7 @@ void tprocess6(const char *fname,const char *fDirectory,int frame_index,int x,in
         sum6LEAFmax=sum6LEAFn;
         x6LEAF=xl;
         y6LEAF=yl;
-      //printf("%4d(%4d,%4d)(%4d,%4d)%5d\n",__LINE__,x6LEAF,y6LEAF,x1f,y,sum6LEAFmax);
+//      printf("%4d(%4d,%4d)(%4d,%4d)%5d\n",__LINE__,x6LEAF,y6LEAF,x1f,y,sum6LEAFmax);
       }
     }  
   }
@@ -3143,26 +3155,30 @@ void tprocess6(const char *fname,const char *fDirectory,int frame_index,int x,in
   B1 = YUV2B(Y1, U1, V1);
   stt.x6=x6LEAF;stt.y6=y6LEAF;
   stt.Y6=Y1;stt.U6=U1;stt.V6=V1;stt.R6=R1;stt.G6=G1;stt.B6=B1;
-  printf("%4d,(%4d,%4d),%5d\n",__LINE__,x6LEAF,y6LEAF,sum6LEAFmax);
+  *px=stt.x3p;*py=stt.y3p;*xLEAF=stt.x6;*yLEAF=stt.y6;
+  stt.isUpdate=true;
+  printf("%4d,(%4d,%4d)(%3d,%3d,%3d)(%3d,%3d,%3d)\n", __LINE__,stt.x6, stt.y6,
+         stt.Y6,stt.U6,stt.V6,stt.R6,stt.G6,stt.B6);
 //step 7:recognize a leaf,contour and region
   BresenhamLine(0,stt.y1i,2160-1,stt.y1j,aframe->data[0],aframe->data[1],aframe->data[2],
                 aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
-
-
+  printf("%4d,(%4d,%4d)-%4d,(%4d,%4d)-(%4d,%4d)\n",__LINE__,stt.x2i,stt.y2i,stt.x2j,stt.x2s,stt.y2s,stt.x2f,stt.y2f);
   BresenhamLine(stt.x2i,stt.y2i,stt.x2j,3839,aframe->data[0],aframe->data[1],aframe->data[2],
                 aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
-
   if(stt.x3p>0) {
+    printf("%4d,(%4d)-(%4d,%4d),(%4d,%4d)-(%4d,%4d)\n",__LINE__,stt.x3i,stt.x3p,stt.x3p,stt.
+            x3s,stt.y3s,stt.x3f,stt.y3f);
     BresenhamLine(stt.x3i,0,stt.x3p,stt.y3p,aframe->data[0],aframe->data[1],aframe->data[2],
                   aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
-    *px=stt.x3p;*py=stt.y3p;
   }
-x
+
   if(stt.y4f>0) {
+    printf("%4d,(%4d,%4d),(%4d,%4d)-(%4d,%4d)\n",__LINE__,stt.x4i,stt.y4i,stt.x4s,stt.y4s,stt.x4f,stt.y4f);
     BresenhamLine(stt.x4i,stt.y4i,stt.x4i,3839,aframe->data[0],aframe->data[1],aframe->data[2],
                   aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
   }
   if(stt.y5f>0) {
+    printf("%4d,(%4d,%4d),(%4d,%4d)-(%4d,%4d)\n",__LINE__,stt.x5i,stt.y5i,stt.x5s,stt.y5s,stt.x5f,stt.y5f);
     BresenhamLine(stt.x5i,stt.y5i,stt.x5i,3839,aframe->data[0],aframe->data[1],aframe->data[2],
                   aframe->linesize[0],aframe->linesize[1],aframe->linesize[2]);
   }
